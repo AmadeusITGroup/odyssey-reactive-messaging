@@ -1,0 +1,7 @@
+name: "Reactive Messaging DI extension"
+metadata:
+  keywords:
+  guide: "https://quarkus.io/guides/datasource"
+  categories:
+  status: "experimental"
+

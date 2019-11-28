@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.amadeus.middleware.odyssey-reactive-messaging</groupId>
+        <artifactId>parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>cdi-reactive-messaging</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.reactivestreams</groupId>
+            <artifactId>reactive-streams</artifactId>
+            <version>${reactive-streams.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.amadeus.middleware.odyssey-reactive-messaging</groupId>
+            <artifactId>reactive-messaging</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.microprofile.reactive.messaging</groupId>
+            <artifactId>microprofile-reactive-messaging-api</artifactId>
+            <version>${microprofile-reactive-messaging.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.enterprise</groupId>
+            <artifactId>cdi-api</artifactId>
+            <version>${cdi-api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency> <!-- For parameterizedtype creation -->
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.9</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.weld.se</groupId>
+            <artifactId>weld-se-shaded</artifactId>
+            <version>${weld-se-shaded.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>

@@ -1,0 +1,23 @@
+<configuration>
+
+    <appender name="STDOUT"
+        class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%-9thread] %-5level %logger{36}:%line - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger level="DEBUG" name="com.amadeus.middleware">
+        <appender-ref ref="STDOUT" />
+    </logger>
+
+    <!--logger level="TRACE" name="com.amadeus.middleware.odyssey.reactive.messaging.reactive.messaging.topology">
+        <appender-ref ref="STDOUT" />
+    </logger-->
+
+
+    <logger level="DEBUG" name="org.jboss.weld">
+        <appender-ref ref="STDOUT" />
+    </logger>
+
+</configuration>
