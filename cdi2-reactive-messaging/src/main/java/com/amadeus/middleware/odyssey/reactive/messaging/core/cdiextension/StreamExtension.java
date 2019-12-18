@@ -139,12 +139,12 @@ public class StreamExtension implements Extension {
 
   private void processFlowingProcessor(AnnotatedType<?> annotatedType, AnnotatedMethod method) {
     CDIFunctionInvoker functionInvoker = new CDIFunctionInvoker(annotatedType.getJavaClass(), method.getJavaMember());
-    Stream<String> is = method.getAnnotations(Incoming.class)
+    Stream<?> is = method.getAnnotations(Incoming.class)
         .stream()
         .map(annotation -> ((Incoming) annotation).value());
     String[] inputChannels = is.collect(Collectors.toList())
         .toArray(new String[] {});
-    Stream<String> os = method.getAnnotations(Outgoing.class)
+    Stream<?> os = method.getAnnotations(Outgoing.class)
         .stream()
         .map(annotation -> ((Outgoing) annotation).value());
     String[] outputChannels = os.collect(Collectors.toList())
@@ -182,7 +182,7 @@ public class StreamExtension implements Extension {
     logger.debug("registering producer for MessageScoped.class: {}", asyncType);
     abd.<Async> addBean()
         .types(asyncType)
-        .createWith(cc -> new CDIAsync(Message.class));
+        .createWith(cc -> new CDIAsync<>(Message.class));
 
     logger.trace("Registering MessageScopedContext");
     messageContexts.stream()

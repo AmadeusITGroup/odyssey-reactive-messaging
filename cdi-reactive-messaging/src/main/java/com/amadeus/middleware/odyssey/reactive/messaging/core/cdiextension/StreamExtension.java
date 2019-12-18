@@ -127,7 +127,7 @@ public class StreamExtension implements Extension {
         .stream()
         .filter(m -> m.isAnnotationPresent(MessageContextBuilder.class))
         .forEach(annotatedMethod -> {
-          Class returnType = annotatedMethod.getJavaMember()
+          Class<?> returnType = annotatedMethod.getJavaMember()
               .getReturnType();
           messageContextFactory.add(returnType, annotatedMethod.getJavaMember());
           messageContextFactory.add(returnType, event.getAnnotatedBeanClass()
@@ -135,7 +135,7 @@ public class StreamExtension implements Extension {
         });
   }
 
-  public void processFlowingMethod(BeanManager beanManager, AnnotatedType<?> annotatedType, AnnotatedMethod method) {
+  public void processFlowingMethod(BeanManager beanManager, AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
     if (method.isAnnotationPresent(Incoming.class)) {
       processFlowingProcessor(beanManager, annotatedType, method);
     } else if (method.isAnnotationPresent(Outgoing.class)) {
@@ -144,7 +144,7 @@ public class StreamExtension implements Extension {
   }
 
   private void processFlowingProcessor(BeanManager beanManager, AnnotatedType<?> annotatedType,
-      AnnotatedMethod method) {
+      AnnotatedMethod<?> method) {
     CDIFunctionInvoker functionInvoker = new CDIFunctionInvoker(beanManager, annotatedType.getJavaClass(),
         method.getJavaMember());
     Stream<String> is = method.getAnnotations(Incoming.class)
@@ -164,7 +164,7 @@ public class StreamExtension implements Extension {
         functionInvoker, inputChannels, outputChannels);
   }
 
-  private void processFlowingPublisher(AnnotatedType<?> annotatedType, AnnotatedMethod method) {
+  private void processFlowingPublisher(AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
 
     PublisherInvoker publisherInvoker = new PublisherInvoker(annotatedType.getJavaClass(), method.getJavaMember());
     Stream<String> os = method.getAnnotations(Outgoing.class)
@@ -181,6 +181,7 @@ public class StreamExtension implements Extension {
 
   }
 
+  @SuppressWarnings("unchecked")
   public void afterBeanDiscovery(@Observes AfterBeanDiscovery abd, BeanManager beanManager) {
     logger.trace("Registering MessageScopedContext");
 
@@ -194,8 +195,9 @@ public class StreamExtension implements Extension {
 
   }
 
-  void registerMessageScopedProducer(AfterBeanDiscovery abd, BeanManager beanManager, AnnotatedType at) {
-    Class clazz = at.getJavaClass();
+  @SuppressWarnings("rawtypes")
+  void registerMessageScopedProducer(AfterBeanDiscovery abd, BeanManager beanManager, AnnotatedType<? extends MessageContext> at) {
+    Class<? extends MessageContext> clazz = at.getJavaClass();
 
     ///
     abd.<MessageContext> addBean()
@@ -204,6 +206,7 @@ public class StreamExtension implements Extension {
         .createWith(new MessageContextProducer(beanManager, clazz, messageContextFactory));
 
     logger.debug("registering producer for MessageScoped.class: {}", clazz.getName());
+
     Function<CreationalContext<Async>, Async> asyncProducer = new AsyncProducer(beanManager, clazz);
 
     ParameterizedType asyncType = TypeUtils.parameterize(Async.class, at.getJavaClass());

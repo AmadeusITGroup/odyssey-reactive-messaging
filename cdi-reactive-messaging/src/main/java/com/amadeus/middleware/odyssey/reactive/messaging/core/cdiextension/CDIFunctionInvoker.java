@@ -3,6 +3,7 @@ package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,6 +14,7 @@ import javax.enterprise.inject.spi.BeanManager;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
+import org.apache.commons.lang3.reflect.TypeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,12 +63,18 @@ public class CDIFunctionInvoker implements FunctionInvoker {
 
       // Special handling of Async as it is a parameterized type
       if (Async.class.isAssignableFrom(param.getType())) {
-        Type type = param.getParameterizedType();
+        ParameterizedType type = (ParameterizedType) param.getParameterizedType();
+        Type parameterType = type.getActualTypeArguments()[0];
+        if (ParameterizedType.class.isAssignableFrom(parameterType.getClass())) {
+          parameterType = ((ParameterizedType) parameterType).getRawType();
+        }
+        type = TypeUtils.parameterize(Async.class, parameterType);
         ArrayList<Annotation> annotations = new ArrayList<Annotation>();
         if (param.getAnnotations() != null) {
           Arrays.stream(param.getAnnotations())
               .forEach(a -> annotations.add(a));
         }
+
         annotations.add(new TypeAnnotationLiteral(type.getTypeName()));
         Instance asyncInstance = instance.select(new TypeAnnotationLiteral(type.getTypeName()))
             .select(param.getType());

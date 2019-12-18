@@ -32,7 +32,7 @@ public class CDIAsync<T> implements Async<T> {
     } else if (bs.size() > 1) {
       throw new AsyncResolutionException("Ambiguous resolution: " + theClass.getName());
     }
-    Bean mybean = bs.iterator()
+    Bean<?> mybean = bs.iterator()
         .next();
     // This should create the bean in the context if not already there
     beanManager.createInstance()
