@@ -37,7 +37,7 @@ public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
     return message;
   }
 
-  private void buildCdiContext(MessageImpl message) {
+  private void buildCdiContext(MessageImpl<T> message) {
     // Get a new unique MessageScope identifier
     String msi = Long.toString(messageScopeId.getAndIncrement());
     logger.debug("new message with scopeid={}", msi);
@@ -61,7 +61,7 @@ public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
 
       // Let's request to the CDI container for the MessageContext instanciation
       if (ReactiveMessagingContext.getMessageContextFactory().getMessageContext() != null) {
-        for (Class<MessageContext> mcc : ReactiveMessagingContext.getMessageContextFactory().getMessageContext()) {
+        for (Class<? extends MessageContext> mcc : ReactiveMessagingContext.getMessageContextFactory().getMessageContext()) {
           // some method calls seems to be intercepted by the CDI proxy, e.g.: getClass()
           // thus calling getIdentifyingKey() to go to the final instance and for bean instanciation by the container
           CDI.current()

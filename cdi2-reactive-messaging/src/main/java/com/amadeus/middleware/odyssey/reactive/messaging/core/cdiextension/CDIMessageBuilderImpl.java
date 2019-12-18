@@ -13,14 +13,14 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.AbstractMessa
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
 
-public class CDIMessageBuilderImpl extends AbstractMessageBuilder {
+public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
   private static final Logger logger = LoggerFactory.getLogger(CDIMessageBuilderImpl.class);
 
   private static AtomicLong messageScopeId = new AtomicLong();
 
   @Override
-  public Message build() {
-    MessageImpl message = new MessageImpl(messageContexts, payload);
+  public Message<T> build() {
+    MessageImpl<T> message = new MessageImpl<T>(messageContexts, payload);
 
     AbstractMessageBuilder.setupParentChildLink(parents, message);
 
@@ -37,7 +37,7 @@ public class CDIMessageBuilderImpl extends AbstractMessageBuilder {
     return message;
   }
 
-  private void buildCdiContext(MessageImpl message) {
+  private void buildCdiContext(MessageImpl<T> message) {
     // Get a new unique MessageScope identifier
     String msi = Long.toString(messageScopeId.getAndIncrement());
     logger.debug("new message with scopeid={}", msi);
@@ -66,7 +66,7 @@ public class CDIMessageBuilderImpl extends AbstractMessageBuilder {
       // Let's request to the CDI container for the MessageContext instanciation
       if (ReactiveMessagingContext.getMessageContextFactory()
           .getMessageContext() != null) {
-        mccloop: for (Class<MessageContext> mcc : ReactiveMessagingContext.getMessageContextFactory()
+        mccloop: for (Class<? extends MessageContext> mcc : ReactiveMessagingContext.getMessageContextFactory()
             .getMessageContext()) {
 
           Iterable<MessageContext> mcs = message.getContexts();

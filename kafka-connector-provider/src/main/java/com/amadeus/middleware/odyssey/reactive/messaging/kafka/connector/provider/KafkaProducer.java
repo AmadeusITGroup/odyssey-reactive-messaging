@@ -19,7 +19,7 @@ public class KafkaProducer {
   private Vertx vertx = Vertx.vertx();
 
   @Outgoing("input_channel")
-  public Publisher<Message> publish() {
+  public Publisher<Message<String>> publish() {
     Map<String, String> config = new HashMap<>();
     config.put("bootstrap.servers", "127.0.0.1:9092");
     config.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
@@ -34,7 +34,7 @@ public class KafkaProducer {
     return consumer.toFlowable()
         .doOnEach(r -> logger.debug("producing {}", r.getValue()
             .key()))
-        .map(record -> Message.builder()
+        .map(record -> Message.<String>builder()
             .addMessageContext(new KafkaContextImpl(record))
             .payload(record.value())
             .build());

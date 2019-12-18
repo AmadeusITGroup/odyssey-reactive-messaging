@@ -27,21 +27,21 @@ public class CDIFunctionInvoker implements FunctionInvoker {
   private static final Logger logger = LoggerFactory.getLogger(CDIFunctionInvoker.class);
 
   private BeanManager beanManager;
-  private Class targetClass;
+  private Class<?> targetClass;
   private Method targetMethod;
 
-  public CDIFunctionInvoker(BeanManager beanManager, Class targetClass, Method targetMethod) {
+  public CDIFunctionInvoker(BeanManager beanManager, Class<?> targetClass, Method targetMethod) {
     this.targetClass = targetClass;
     this.beanManager = beanManager;
     this.targetMethod = targetMethod;
   }
 
-  public Class getTargetClass() {
+  public Class<?> getTargetClass() {
     return targetClass;
   }
 
-  public Object invoke(Object targetInstance, Message message) throws FunctionInvocationException {
-    MessageImpl messageImpl = (MessageImpl) message;
+  public Object invoke(Object targetInstance, Message<?> message) throws FunctionInvocationException {
+    MessageImpl<?> messageImpl = (MessageImpl<?>) message;
     MessageScopedContext context = MessageScopedContext.getInstance();
     context.start(messageImpl.getScopeContextId());
     try {
@@ -56,7 +56,7 @@ public class CDIFunctionInvoker implements FunctionInvoker {
 
   // This should be called within the scope of an
   // active MessageContext
-  private Object[] buildParameters(Message message) {
+  private Object[] buildParameters(Message<?> message) {
     Instance<Object> instance = beanManager.createInstance();
     List<Object> parameters = new ArrayList<>();
     for (Parameter param : targetMethod.getParameters()) {
@@ -76,7 +76,7 @@ public class CDIFunctionInvoker implements FunctionInvoker {
         }
 
         annotations.add(new TypeAnnotationLiteral(type.getTypeName()));
-        Instance asyncInstance = instance.select(new TypeAnnotationLiteral(type.getTypeName()))
+        Instance<?> asyncInstance = instance.select(new TypeAnnotationLiteral(type.getTypeName()))
             .select(param.getType());
         if (asyncInstance.isResolvable()) {
           parameters.add(asyncInstance.get());
@@ -88,7 +88,7 @@ public class CDIFunctionInvoker implements FunctionInvoker {
       }
 
       // Regular CDI case
-      Instance<Object> ip = (Instance<Object>) instance.select(param.getType(), param.getAnnotations());
+      Instance<?> ip = (Instance<?>) instance.select(param.getType(), param.getAnnotations());
       if (ip.isResolvable()) {
         parameters.add(ip.get());
         continue;

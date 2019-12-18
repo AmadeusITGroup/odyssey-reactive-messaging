@@ -47,7 +47,7 @@ public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
     return this;
   }
 
-  protected static void setupParentChildLink(List<Message<?>> parents, Message child) {
+  protected static void setupParentChildLink(List<Message<?>> parents, Message<?> child) {
     if (parents.isEmpty()) {
       return;
     }

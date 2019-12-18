@@ -45,6 +45,7 @@ public final class MessageScopedContext {
         .computeIfAbsent(clazz, key -> object);
   }
 
+  @SuppressWarnings("unchecked")
   public <T> T get(Class<T> clazz) {
     String scopeId = ACTIVE_MESSAGE_SCOPE_THREAD_LOCAL.get();
     if (scopeId == null) {

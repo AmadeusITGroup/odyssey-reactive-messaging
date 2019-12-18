@@ -7,6 +7,7 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 
 public class AsyncMessageProducer {
+  @SuppressWarnings("rawtypes")
   @Produces
   @MessageScoped
   public CDIAsync<Message> producer(BeanManager beanManager) {
@@ -20,6 +21,7 @@ public class AsyncMessageProducer {
    * https://issues.redhat.com/browse/CDI-455). Hence, the tip used here is to use the (home made) @TypeAnnotation with
    * the type name as a qualifier value.
    */
+  @SuppressWarnings("rawtypes")
   @Produces
   @MessageScoped
   @TypeAnnotation("com.amadeus.middleware.odyssey.reactive.messaging.core.Async<com.amadeus.middleware.odyssey.reactive.messaging.core.Message<T>>")

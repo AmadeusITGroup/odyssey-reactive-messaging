@@ -3,9 +3,6 @@ package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 import java.lang.annotation.Annotation;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.context.spi.Contextual;
@@ -48,7 +45,7 @@ public final class MessageScopedContext implements Context {
 
   private static final ThreadLocal<String> ACTIVE_MESSAGE_SCOPE_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
-  private static final ThreadLocal<Message> ACTIVE_MESSAGE_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
+  private static final ThreadLocal<Message<?>> ACTIVE_MESSAGE_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
   private final ConcurrentHashMap<String, Map<Contextual<?>, BeanInstance<?>>> cache = new ConcurrentHashMap<>();
 
@@ -62,14 +59,15 @@ public final class MessageScopedContext implements Context {
     return MessageScoped.class;
   }
 
-  public void setMessage(Message message) {
+  public void setMessage(Message<?> message) {
     ACTIVE_MESSAGE_THREAD_LOCAL.set(message);
   }
 
-  public Message getMessage() {
+  public Message<?> getMessage() {
     return ACTIVE_MESSAGE_THREAD_LOCAL.get();
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
     String scopeId = ACTIVE_MESSAGE_SCOPE_THREAD_LOCAL.get();
@@ -85,6 +83,7 @@ public final class MessageScopedContext implements Context {
     return instance;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public <T> T get(Contextual<T> contextual) {
     String scopeId = ACTIVE_MESSAGE_SCOPE_THREAD_LOCAL.get();

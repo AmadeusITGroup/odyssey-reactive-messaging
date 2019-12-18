@@ -12,6 +12,7 @@ public class ProxyProducer<T> implements Function<CreationalContext<T>, T> {
     this.clazz = clazz;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public T apply(CreationalContext<T> creationalContext) {
     return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz }, new MessageScopedInvocationHandler(clazz));

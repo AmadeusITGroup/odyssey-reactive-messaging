@@ -9,9 +9,11 @@ import io.vertx.reactivex.kafka.client.consumer.KafkaConsumerRecord;
 
 public class KafkaContextFactory {
 
+  @SuppressWarnings("rawtypes")
   @Inject
   Message message;
 
+  @SuppressWarnings("unchecked")
   @MessageContextBuilder
   public KafkaContext create() {
     KafkaConsumerRecord<String, String> kcr = (KafkaConsumerRecord<String, String>) message.getPayload();

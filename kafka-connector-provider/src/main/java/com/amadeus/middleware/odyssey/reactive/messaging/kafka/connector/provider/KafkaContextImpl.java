@@ -2,17 +2,18 @@ package com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provid
 
 import java.util.List;
 
+import io.vertx.reactivex.kafka.client.producer.KafkaHeader;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import org.apache.kafka.common.record.TimestampType;
 
-import io.vertx.kafka.client.producer.KafkaHeader;
+
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumerRecord;
 
 public class KafkaContextImpl implements KafkaContext {
 
-  private KafkaConsumerRecord kcr;
+  private KafkaConsumerRecord<?,?> kcr;
 
-  KafkaContextImpl(KafkaConsumerRecord kcr) {
+  KafkaContextImpl(KafkaConsumerRecord<?,?> kcr) {
     this.kcr = kcr;
   }
 

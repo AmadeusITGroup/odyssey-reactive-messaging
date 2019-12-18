@@ -24,6 +24,7 @@ public class CDIAsync<T> implements Async<T> {
     this.beanManager = beanManager;
   }
 
+  @SuppressWarnings("unchecked")
   public T get() {
     MessageScopedContext context = (MessageScopedContext) beanManager.getContext(MessageScoped.class);
     Set<Bean<?>> bs = beanManager.getBeans(theClass);

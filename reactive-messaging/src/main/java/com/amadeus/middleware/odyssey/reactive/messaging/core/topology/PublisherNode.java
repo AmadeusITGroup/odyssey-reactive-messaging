@@ -4,10 +4,10 @@ import java.util.Arrays;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 
-public class PublisherNode extends AbstractNode {
-  private PublisherInvoker publisherInvoker;
+public class PublisherNode<T> extends AbstractNode {
+  private PublisherInvoker<T> publisherInvoker;
 
-  public PublisherNode(String name, PublisherInvoker publisherInvoker, String... outputChannels) {
+  public PublisherNode(String name, PublisherInvoker<T> publisherInvoker, String... outputChannels) {
     super(name);
     this.publisherInvoker = publisherInvoker;
     if (outputChannels != null) {
@@ -16,7 +16,7 @@ public class PublisherNode extends AbstractNode {
     }
   }
 
-  public PublisherInvoker getPublisherInvoker() {
+  public PublisherInvoker<T> getPublisherInvoker() {
     return publisherInvoker;
   }
 }

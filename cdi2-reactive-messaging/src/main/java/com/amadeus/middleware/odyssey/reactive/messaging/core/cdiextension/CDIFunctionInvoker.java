@@ -19,20 +19,20 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
 public class CDIFunctionInvoker implements FunctionInvoker {
   private static final Logger logger = LoggerFactory.getLogger(CDIFunctionInvoker.class);
 
-  private Class targetClass;
+  private Class<?> targetClass;
   private Method targetMethod;
 
-  public CDIFunctionInvoker(Class targetClass, Method targetMethod) {
+  public CDIFunctionInvoker(Class<?> targetClass, Method targetMethod) {
     this.targetClass = targetClass;
     this.targetMethod = targetMethod;
   }
 
-  public Class getTargetClass() {
+  public Class<?> getTargetClass() {
     return targetClass;
   }
 
-  public Object invoke(Object targetInstance, Message message) throws FunctionInvocationException {
-    MessageImpl messageImpl = (MessageImpl) message;
+  public Object invoke(Object targetInstance, Message<?> message) throws FunctionInvocationException {
+    MessageImpl<?> messageImpl = (MessageImpl<?>) message;
     MessageScopedContext context = MessageScopedContext.getInstance();
     context.start(messageImpl.getScopeContextId());
     Object[] parameters = buildParameters(message);
@@ -47,7 +47,7 @@ public class CDIFunctionInvoker implements FunctionInvoker {
 
   // This should be called within the scope of an
   // active MessageContext
-  private Object[] buildParameters(Message message) {
+  private Object[] buildParameters(Message<?> message) {
     List<Object> parameters = new ArrayList<>();
     MessageScopedContext msc = MessageScopedContext.getInstance();
     for (Parameter param : targetMethod.getParameters()) {

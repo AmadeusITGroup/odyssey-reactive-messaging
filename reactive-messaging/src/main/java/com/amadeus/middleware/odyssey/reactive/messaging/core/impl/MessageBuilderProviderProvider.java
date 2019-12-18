@@ -13,6 +13,7 @@ public class MessageBuilderProviderProvider {
         .next();
   }
 
+  @SuppressWarnings("rawtypes")
   public static MessageBuilder create() {
     return provider.build();
   }

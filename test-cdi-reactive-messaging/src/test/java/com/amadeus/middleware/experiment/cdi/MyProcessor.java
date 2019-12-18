@@ -8,21 +8,22 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 public class MyProcessor {
 
   @Inject
-  private Message message;
+  private Message<?> message;
 
   @Inject
   private Message<String> messageString;
 
   @Inject
-  private Async<Message> asyncMessage;
+  private Async<Message<?>> asyncMessage;
 
+  @SuppressWarnings("unused")
   @Inject
   private Async<Message<String>> asyncMessageString;
 
   public MyProcessor() {
   }
 
-  public Message getMessage() {
+  public Message<?> getMessage() {
     return message;
   }
 
@@ -30,7 +31,7 @@ public class MyProcessor {
     return messageString;
   }
 
-  public Async<Message> getAsyncMessage() {
+  public Async<Message<?>> getAsyncMessage() {
     return asyncMessage;
   }
 }

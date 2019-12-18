@@ -23,7 +23,8 @@ public interface Message<T> {
 
   CompletableFuture<Void> getAndSetStagedAck(CompletableFuture<Void> acknowledger);
 
-  static MessageBuilder builder() {
+  @SuppressWarnings("unchecked")
+  static <B> MessageBuilder<B> builder() {
     return MessageBuilderProviderProvider.create();
   }
 }
