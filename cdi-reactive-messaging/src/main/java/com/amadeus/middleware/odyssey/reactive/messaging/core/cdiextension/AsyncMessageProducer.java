@@ -22,7 +22,7 @@ public class AsyncMessageProducer {
    */
   @Produces
   @MessageScoped
-  @TypeAnnotation("com.amadeus.middleware.odyssey.reactive.messaging.core.Async<com.amadeus.middleware.odyssey.reactive.messaging.core.Message>")
+  @TypeAnnotation("com.amadeus.middleware.odyssey.reactive.messaging.core.Async<com.amadeus.middleware.odyssey.reactive.messaging.core.Message<T>>")
   public CDIAsync producerForProgrammaticLookup(BeanManager beanManager) {
     return new CDIAsync<>(Message.class, beanManager);
   }

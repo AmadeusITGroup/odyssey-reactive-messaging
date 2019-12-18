@@ -3,6 +3,7 @@ package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,7 +55,11 @@ public class CDIFunctionInvoker implements FunctionInvoker {
       // Special handling of Async as it is a parameterized type
       if (Async.class.isAssignableFrom(param.getType())) {
         ParameterizedType type = (ParameterizedType) param.getParameterizedType();
-        Class<?> clazz = (Class<?>) type.getActualTypeArguments()[0];
+        Type parameterType = type.getActualTypeArguments()[0];
+        if (ParameterizedType.class.isAssignableFrom(parameterType.getClass())) {
+          parameterType = ((ParameterizedType) parameterType).getRawType();
+        }
+        Class<?> clazz = (Class<?>) parameterType;
         parameters.add(new CDIAsync<>(clazz));
         continue;
       }

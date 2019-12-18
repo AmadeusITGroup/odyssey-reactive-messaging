@@ -14,12 +14,12 @@ public class EventContextFactory {
   private KafkaContext kafkaContext;
 
   @Inject
-  private Message message;
+  private Message<?> message;
 
   @MessageContextBuilder
   public EventContext newMessageContext() {
     EventContext ec = new EventContextImpl();
-    ec.setEventKey("0" /* (String) kafkaContext.key() */);
+    ec.setEventKey((String) kafkaContext.key());
     String payload = (String) message.getPayload();
     ec.setUniqueMessageId(payload.split("-")[0]);
     return ec;

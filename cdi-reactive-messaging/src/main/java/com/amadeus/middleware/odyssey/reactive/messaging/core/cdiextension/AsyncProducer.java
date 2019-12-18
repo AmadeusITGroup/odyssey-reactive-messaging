@@ -9,6 +9,7 @@ import javax.enterprise.inject.spi.BeanManager;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 
+@SuppressWarnings("rawtypes")
 public class AsyncProducer implements Function<CreationalContext<Async>, Async> {
 
   private BeanManager beanManager;

@@ -9,13 +9,13 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 
-public abstract class AbstractMessageBuilder implements MessageBuilder {
+public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
 
   protected boolean dependencyInjection = true; // TODO: enable "global" configuration
 
   protected List<Message<?>> parents = new ArrayList<>();
   protected List<MessageContext> messageContexts = new ArrayList<>();
-  protected Object payload;
+  protected T payload;
 
   /**
    * Warning: MessageContexts are not copied from the parent at this time.
@@ -24,25 +24,25 @@ public abstract class AbstractMessageBuilder implements MessageBuilder {
    * @return
    */
   @Override
-  public MessageBuilder fromParent(Message<?>... parents) {
+  public MessageBuilder<T> fromParent(Message<?>... parents) {
     this.parents.addAll(Arrays.asList(parents));
     return this;
   }
 
   @Override
-  public MessageBuilder payload(Object payload) {
+  public MessageBuilder<T> payload(T payload) {
     this.payload = payload;
     return this;
   }
 
   @Override
-  public MessageBuilder addMessageContext(MessageContext messageContext) {
+  public MessageBuilder<T> addMessageContext(MessageContext messageContext) {
     messageContexts.add(messageContext);
     return this;
   }
 
   @Override
-  public MessageBuilder dependencyInjection(boolean activate) {
+  public MessageBuilder<T> dependencyInjection(boolean activate) {
     dependencyInjection = activate;
     return this;
   }

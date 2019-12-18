@@ -4,10 +4,10 @@ import java.util.Arrays;
 
 import org.reactivestreams.Subscriber;
 
-public class SubscriberNode<T> extends AbstractNode {
-  private Subscriber<T> subscriber;
+public class SubscriberNode extends AbstractNode {
+  private Subscriber<?> subscriber;
 
-  public SubscriberNode(String name, Subscriber<T> subscriber, String... channelNames) {
+  public SubscriberNode(String name, Subscriber<?> subscriber, String... channelNames) {
     super(name);
     this.subscriber = subscriber;
     if (channelNames != null) {

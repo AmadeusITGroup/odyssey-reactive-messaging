@@ -40,12 +40,12 @@ public class MyAdvancedProcessor {
   private Message<String> gmsg;
 
   @Inject
-  private Async<Message> agmsg;
+  private Async<Message<String>> agmsg;
 
   @Incoming("internal_channel")
   @Outgoing("output_channel")
   public void stage4(KafkaContext kc, Async<KafkaContext> akc, EventContext ec, Async<EventContext> aec,
-      Message<String> msg, Async<Message> amsg, Object payload) {
+      Message<String> msg, Async<Message<String>> amsg, Object payload) {
 
     logger.info("stage4 start");
 
@@ -76,14 +76,14 @@ public class MyAdvancedProcessor {
     logger.info("stage4 stop");
   }
 
-  private void sendToAsynchronousProcessing(Async<Message> amsg) {
+  private void sendToAsynchronousProcessing(Async<Message<String>> amsg) {
 
-    Message pojoMessage = agmsg.get();
+    Message<String> pojoMessage = agmsg.get();
 
     // Catch the acknowledgement to add the delay async operation as a condition in the middle
     // of the acknowledgement chain
     CompletableFuture<Void> newAcknowledger = new CompletableFuture<>();
-    CompletionStage<Void> incomingAcknowledger = pojoMessage.getAndSetStagedAck(newAcknowledger);
+    CompletableFuture<Void> incomingAcknowledger = pojoMessage.getAndSetStagedAck(newAcknowledger);
 
     Flowable.fromArray("hello")
         .delay(1, TimeUnit.SECONDS)

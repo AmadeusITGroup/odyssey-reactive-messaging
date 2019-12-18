@@ -32,7 +32,7 @@ public class MyProcessorTest {
 
   @Test
   public void basicTest() {
-    MessageImpl msg = (MessageImpl) Message.builder()
+    MessageImpl<String> msg = (MessageImpl<String>) Message.<String> builder()
         .payload("hello")
         .build();
 

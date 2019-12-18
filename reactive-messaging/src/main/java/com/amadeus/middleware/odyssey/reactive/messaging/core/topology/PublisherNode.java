@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 
-public class PublisherNode<T> extends AbstractNode {
+public class PublisherNode extends AbstractNode {
   private PublisherInvoker publisherInvoker;
 
   public PublisherNode(String name, PublisherInvoker publisherInvoker, String... outputChannels) {

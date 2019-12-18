@@ -1,16 +1,16 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core;
 
-public interface MessageBuilder {
-  Message build();
+public interface MessageBuilder<T> {
+  Message<T>  build();
 
-  MessageBuilder fromParent(Message<?>... parents);
+  MessageBuilder<T>  fromParent(Message<?>... parents);
 
-  MessageBuilder payload(Object payload);
+  MessageBuilder<T>  payload(T payload);
 
-  MessageBuilder addMessageContext(MessageContext messageContext);
+  MessageBuilder<T>  addMessageContext(MessageContext messageContext);
 
   /**
    * This is forcing the enabling/disabling of dependency injection activation for the message.
    */
-  MessageBuilder dependencyInjection(boolean activate);
+  MessageBuilder<T>  dependencyInjection(boolean activate);
 }

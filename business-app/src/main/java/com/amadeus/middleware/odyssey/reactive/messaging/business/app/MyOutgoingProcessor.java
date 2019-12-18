@@ -14,7 +14,7 @@ public class MyOutgoingProcessor {
   private static final Logger logger = LoggerFactory.getLogger(MyOutgoingProcessor.class);
 
   @Inject
-  private Message message;
+  private Message<String> message;
 
   @Incoming("output_channel")
   public void output() {

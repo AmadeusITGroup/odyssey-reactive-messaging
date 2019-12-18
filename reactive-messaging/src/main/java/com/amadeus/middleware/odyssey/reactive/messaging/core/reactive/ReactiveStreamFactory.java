@@ -14,15 +14,15 @@ import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvoker;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Node;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.ProcessorNode;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.PublisherNode;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.SubscriberNode;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvoker;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 
 @ApplicationScoped
 public class ReactiveStreamFactory {
@@ -47,8 +47,8 @@ public class ReactiveStreamFactory {
     PublisherInvoker publisherInvoker = publisherNode.getPublisherInvoker();
     Object targetPublisherInstance = instance.select(publisherInvoker.getTargetClass())
         .get();
-    Publisher publisher = publisherInvoker.invoke(targetPublisherInstance);
-    PublisherBuilder pb = ReactiveStreams.fromPublisher(publisher);
+    Publisher<?> publisher = publisherInvoker.invoke(targetPublisherInstance);
+    PublisherBuilder<?> pb = ReactiveStreams.fromPublisher(publisher);
 
     Node node = publisherNode;
     while (true) {

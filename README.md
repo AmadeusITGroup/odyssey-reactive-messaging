@@ -4,7 +4,7 @@
 
 ### Reactive Messaging for MicroProfile exploration
 
-This project is about experimenting with new idea for the [Reactive Messaging for MicroProfile](https://github.com/eclipse/microprofile-reactive-messaging) specifications.
+This project is about experimenting with new ideas for the [Reactive Messaging for MicroProfile](https://github.com/eclipse/microprofile-reactive-messaging) specifications.
 
 The current main focus is on the follow aspects:
  
@@ -40,11 +40,11 @@ challenge of threads (i.e. In CDI, a *NormalScope* is thread bound.).
 ## Prototyped API
 
 This section introduces some basic elements.
-Additional concepts are introduced in the following sections with more advance scenario.
+Additional concepts are introduced in the following sections with more advanced scenario.
 
 ### Message
 
-A `Message`, here, is exposed as an interface, however *it is implemented by the framework*.
+A `Message` is exposed as an interface, however *it is only implemented by the framework*.
 There is no sub-classing by connector providers.
 
 A `Message`, along with all what is contained inside it, is a simlpe POJO and can go through reactive streams without any concern.
@@ -266,7 +266,7 @@ public class EventContextFactory {
   private KafkaContext kafkaContext;
 
   @Inject
-  private Message message;
+  private Message<?> message;
 
   @MessageContextBuilder
   public EventContext newMessageContext() {
@@ -465,7 +465,7 @@ Now, let us consider a "pathological" cases:
 * (`m1`, `m1'`) are actually the same `m0` that is re-sent several times.
 
 If so, it is likely that one of these propagation of `m0` will be acked first which will destroy the CDI context.
-Hence, if this CDI context should be started afterward an exception will be raised from inside the stream  (...).
+Hence, if this CDI context should be started afterward, an exception will be raised from inside the stream  (...).
 
 ### From n to 1 (or more...) Messages
 

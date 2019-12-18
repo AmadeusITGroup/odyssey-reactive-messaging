@@ -20,7 +20,7 @@ public class MessageImpl<T> implements Message<T> {
 
   private CompletableFuture<Void> messageAck = new CompletableFuture<>();
 
-  private AtomicReference<CompletableFuture<Void>> stageAck = new AtomicReference(messageAck);
+  private AtomicReference<CompletableFuture<Void>> stageAck = new AtomicReference<>(messageAck);
 
   public MessageImpl(List<MessageContext> messageContexts, T payload) {
     this.messageContexts = messageContexts;
