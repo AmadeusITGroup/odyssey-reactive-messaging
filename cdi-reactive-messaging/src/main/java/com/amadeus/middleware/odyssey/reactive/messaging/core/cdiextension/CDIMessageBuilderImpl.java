@@ -1,14 +1,14 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicLong;
-
-import javax.enterprise.inject.spi.CDI;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextProducerException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.AbstractMessageBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
@@ -20,7 +20,7 @@ public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
 
   @Override
   public Message<T> build() {
-    MessageImpl<T> message = new MessageImpl<>(messageContexts, payload);
+    MessageImpl<T> message = new MessageImpl<T>(messageContexts, payload);
 
     AbstractMessageBuilder.setupParentChildLink(parents, message);
 
@@ -51,27 +51,41 @@ public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
     }
     try {
       // Attach the Message pojo to the CDI context so it can be used to back the Message cdi bean
-      context.setMessage(message);
+      context.add(msi, Message.class, message);
 
-      // Let's request to the CDI container the Message bean
-      CDI.current()
-          .select(Message.class)
-          .get()
-          .getPayload(); // method call to force instance creation
+      message.getContexts()
+          .forEach(msgCtx -> {
+            // TODO: make the actual implementation
+            // Register the messageContext using its interface annotated with @MessageScoped
+            // For now: assume it is its single first-interface..
+            Class<?> clazz = msgCtx.getClass();
+            clazz = clazz.getInterfaces()[0];
+            context.add(msi, clazz, msgCtx);
+          });
 
       // Let's request to the CDI container for the MessageContext instanciation
-      if (ReactiveMessagingContext.getMessageContextFactory().getMessageContext() != null) {
-        for (Class<? extends MessageContext> mcc : ReactiveMessagingContext.getMessageContextFactory().getMessageContext()) {
-          // some method calls seems to be intercepted by the CDI proxy, e.g.: getClass()
-          // thus calling getIdentifyingKey() to go to the final instance and for bean instanciation by the container
-          CDI.current()
-              .select(mcc)
-              .get()
-              .getIdentifyingKey();
+      if (ReactiveMessagingContext.getMessageContextFactory()
+          .getMessageContext() != null) {
+        mccloop: for (Class<? extends MessageContext> mcc : ReactiveMessagingContext.getMessageContextFactory()
+            .getMessageContext()) {
+
+          Iterable<MessageContext> mcs = message.getContexts();
+          for (MessageContext mc : mcs) {
+            if (mcc.isAssignableFrom(mc.getClass())) {
+              continue mccloop;
+            }
+          }
+          try {
+            MessageContext nmc = ReactiveMessagingContext.getMessageContextFactory()
+                .create(mcc);
+            message.addContext(nmc);
+            context.add(msi, mcc, nmc);
+          } catch (InvocationTargetException | IllegalAccessException e) {
+            throw new MessageContextProducerException(e);
+          }
         }
       }
     } finally {
-      context.setMessage(null);
       if (!alreadyActive) {
         context.suspend();
       }

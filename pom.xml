@@ -33,7 +33,6 @@
         <module>business-app</module>
         <module>jmh</module>
         <module>rm-ext</module>
-        <module>cdi2-reactive-messaging</module>
     </modules>
 
     <build>

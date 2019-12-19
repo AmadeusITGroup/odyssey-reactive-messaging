@@ -505,9 +505,6 @@ Here are the main steps:
 3- The framework is spawning a new `MessageScopeContext` unique to this message.
 The message keeps secretly an identifier to this context.
 
-Note (implementation): In module `cdi-reactive-message`, `MessageScopeContext` is a CDI `Context.
-While in module `cdi2-reactive-message` it is not.
-
 4- The newly built message is returned as a POJO to the connector.
 
 5- The connector is pushing this POJO message into the reactive stream.
@@ -535,24 +532,6 @@ the `MessageScopeContext` is destroyed.
 ### CDI implementations considerations
 
 #### `cdi-reactive-messaging` implementation
-
-This implementation is storing all the injected instance in a regular CDI context (`MessageScopedContext`).
-Then, the CDI lookup for injection is not customized and the parameter lookup for direct method call is using this context.
-
-The actual Pojo are bound to the CDI proxy with the following trick:
-
-* The Pojo are stored in the context using `ThreadLocal` by the `MessageBuilderImpl` calling `context.setMessage(message);`.
-
-* Then, the CDI producers (`MessageProducer.produceMessage`) is retrieving the pojo from the context when called
-by the CDI container.
-
-This is assumed to be legitimate as the context is normal (thread scoped), and the producers are injectable hence they
-should be called from the same thread that the initial caller for bean instance used to ensure the correct CDI scoping.
-
-This implementation has performance issues (see `README.md` in the `jmh` module).
-The next one (or an even better one) has to be favored.
-
-#### `cdi2-reactive-messaging` implementation
 
 This implementation is storing all the injected instance in a simple class (`MessageScopedContext`) that is not a CDI context.
 
@@ -702,8 +681,6 @@ This is agnostic to any DI framework (however some CDI annotations are used).
 `cdi-reactive-messaging`: CDI implementation of the framework.
 It works with Weld (no other container implementation tested).
 However only CDI-spec API is used.
-
-`cdi2-reactive-messaging`: An alternative implementation of the `cdi-reactive-messaging` motivated by performance issues. 
 
 `test-cdi-reactive-messaging`: First basic tests of `cdi-reactive-messaging` (using Weld).
 

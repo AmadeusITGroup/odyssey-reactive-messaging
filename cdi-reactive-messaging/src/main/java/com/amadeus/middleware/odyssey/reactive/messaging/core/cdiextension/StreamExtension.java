@@ -6,11 +6,9 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.AfterBeanDiscovery;
@@ -18,7 +16,6 @@ import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.AnnotatedMethod;
 import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.Extension;
 import javax.enterprise.inject.spi.ProcessAnnotatedType;
 import javax.enterprise.inject.spi.ProcessInjectionPoint;
@@ -43,20 +40,14 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyBuilder;
 
 public class StreamExtension implements Extension {
-
   private static final Logger logger = LoggerFactory.getLogger(StreamExtension.class);
 
-  private MessageContextFactory messageContextFactory;
+  // Register it into ReactiveMessagingContext ?
+  private MessageContextFactory messageContextFactory = new MessageContextFactoryImpl();
 
   private TopologyBuilder builder = new TopologyBuilder();
-  private List<AnnotatedType<? extends MessageContext>> messageContexts = new ArrayList<>();
+  private List<AnnotatedType<?>> messageContexts = new ArrayList<>();
 
-  public void registerScope(@Observes BeforeBeanDiscovery bbd, BeanManager beanManager) {
-    bbd.addScope(MessageScoped.class, true, false);
-    messageContextFactory = new MessageContextFactoryImpl(beanManager);
-  }
-
-  @SuppressWarnings("unchecked")
   <T> void vetoAllMessageContextTypes(@Observes ProcessAnnotatedType<T> event) {
 
     Class<?> theClass = event.getAnnotatedType()
@@ -81,17 +72,17 @@ public class StreamExtension implements Extension {
     event.veto();
 
     // Register the vetoed type
-    messageContexts.add((AnnotatedType<? extends MessageContext>) event.getAnnotatedType());
+    messageContexts.add(event.getAnnotatedType());
   }
 
+  // Here, the injection point will be transformed as follow:
+  // Message<T> => Message
+  // Async<WhatEver<T>> => Async<Whatever>
   <T, X> void reshapeParameterizedInjectionPoint(@Observes ProcessInjectionPoint<T, X> event) {
     Member member = event.getInjectionPoint()
         .getMember();
     Class<?> dc = member.getDeclaringClass();
 
-    // Here, the injection point will be transformed as:
-    // Message<T> => Message
-    // Async<WhatEver<T>> => Async<Whatever>
     try {
       Field field = dc.getDeclaredField(member.getName());
       if (field != null) {
@@ -112,18 +103,19 @@ public class StreamExtension implements Extension {
           }
         }
       }
-    } catch (NoSuchFieldException e) { // TODO: filter berfore this happens
+    } catch (NoSuchFieldException e) {
+      // TODO: filter before this can happen
       logger.warn("argh! {}.{}", dc.getName(), member.getName());
     }
   }
 
   @SuppressWarnings("unchecked")
-  <T> void processManagedBean(@Observes ProcessManagedBean<T> event, BeanManager beanManager) {
+  <T> void processManagedBean(@Observes ProcessManagedBean<T> event) {
     AnnotatedType<?> annotatedType = event.getAnnotatedBeanClass();
     annotatedType.getMethods()
         .stream()
         .filter(m -> m.isAnnotationPresent(Incoming.class) || m.isAnnotationPresent(Outgoing.class))
-        .forEach(method -> processFlowingMethod(beanManager, annotatedType, method));
+        .forEach(method -> processFlowingMethod(annotatedType, method));
 
     annotatedType.getMethods()
         .stream()
@@ -137,24 +129,22 @@ public class StreamExtension implements Extension {
         });
   }
 
-  public void processFlowingMethod(BeanManager beanManager, AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
+  public void processFlowingMethod(AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
     if (method.isAnnotationPresent(Incoming.class)) {
-      processFlowingProcessor(beanManager, annotatedType, method);
+      processFlowingProcessor(annotatedType, method);
     } else if (method.isAnnotationPresent(Outgoing.class)) {
       processFlowingPublisher(annotatedType, method);
     }
   }
 
-  private void processFlowingProcessor(BeanManager beanManager, AnnotatedType<?> annotatedType,
-      AnnotatedMethod<?> method) {
-    CDIFunctionInvoker functionInvoker = new CDIFunctionInvoker(beanManager, annotatedType.getJavaClass(),
-        method.getJavaMember());
-    Stream<String> is = method.getAnnotations(Incoming.class)
+  private void processFlowingProcessor(AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
+    CDIFunctionInvoker functionInvoker = new CDIFunctionInvoker(annotatedType.getJavaClass(), method.getJavaMember());
+    Stream<?> is = method.getAnnotations(Incoming.class)
         .stream()
         .map(annotation -> ((Incoming) annotation).value());
     String[] inputChannels = is.collect(Collectors.toList())
         .toArray(new String[] {});
-    Stream<String> os = method.getAnnotations(Outgoing.class)
+    Stream<?> os = method.getAnnotations(Outgoing.class)
         .stream()
         .map(annotation -> ((Outgoing) annotation).value());
     String[] outputChannels = os.collect(Collectors.toList())
@@ -167,7 +157,6 @@ public class StreamExtension implements Extension {
   }
 
   private void processFlowingPublisher(AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
-
     PublisherInvoker<?> publisherInvoker = new PublisherInvoker<>(annotatedType.getJavaClass(), method.getJavaMember());
     Stream<String> os = method.getAnnotations(Outgoing.class)
         .stream()
@@ -180,54 +169,45 @@ public class StreamExtension implements Extension {
         + method.getJavaMember()
             .getName(),
         publisherInvoker, outputChannels);
-
   }
 
-  public void afterBeanDiscovery(@Observes AfterBeanDiscovery abd, BeanManager beanManager) {
+  @SuppressWarnings("rawtypes")
+  void afterBeanDiscovery(@Observes AfterBeanDiscovery abd) {
+
+    abd.<MessageContext> addBean()
+        .types(Message.class)
+        .createWith(new ProxyProducer<>(Message.class));
+
+    ParameterizedType asyncType = TypeUtils.parameterize(Async.class, Message.class);
+
+    logger.debug("registering producer for MessageScoped.class: {}", asyncType);
+    abd.<Async> addBean()
+        .types(asyncType)
+        .createWith(cc -> new CDIAsync<>(Message.class));
+
     logger.trace("Registering MessageScopedContext");
-
-    abd.addContext(MessageScopedContext.getInstance());
-
     messageContexts.stream()
         // Skip producer exposition for non-directly annotated classes
         .filter(annotatedType -> annotatedType.getJavaClass()
             .isAnnotationPresent(MessageScoped.class))
-        .forEach(annotatedType -> registerMessageScopedProducer(abd, beanManager, annotatedType));
-
+        .forEach(annotatedType -> registerMessageScopedProducer(abd, annotatedType));
   }
 
-  @SuppressWarnings("rawtypes")
-  void registerMessageScopedProducer(AfterBeanDiscovery abd, BeanManager beanManager,
-      AnnotatedType<? extends MessageContext> at) {
-    Class<? extends MessageContext> clazz = at.getJavaClass();
-
-    ///
-    abd.<MessageContext> addBean()
-        .scope(MessageScoped.class)
-        .types(clazz)
-        .createWith(new MessageContextProducer(beanManager, clazz, messageContextFactory));
+  @SuppressWarnings({ "rawtypes", "unchecked" })
+  void registerMessageScopedProducer(AfterBeanDiscovery abd, AnnotatedType<?> at) {
+    Class<?> clazz = at.getJavaClass();
 
     logger.debug("registering producer for MessageScoped.class: {}", clazz.getName());
-
-    Function<CreationalContext<Async>, Async> asyncProducer = new AsyncProducer(beanManager, clazz);
+    abd.<MessageContext> addBean()
+        .types(clazz)
+        .createWith(new ProxyProducer<>(clazz));
 
     ParameterizedType asyncType = TypeUtils.parameterize(Async.class, at.getJavaClass());
 
     logger.debug("registering producer for MessageScoped.class: {}", asyncType);
     abd.<Async> addBean()
-        .scope(MessageScoped.class)
         .types(asyncType)
-        .createWith(asyncProducer);
-
-    // For manual lookup with method invoke
-    // See AsyncMessageProducer.producerForProgrammaticLookup for more explanation of the principle.
-    logger.debug("registering producer for MessageScoped.class: Async.class with qualifier type={}",
-        asyncType.getTypeName());
-    abd.<Async> addBean()
-        .scope(MessageScoped.class)
-        .types(Async.class)
-        .qualifiers(new TypeAnnotationLiteral(asyncType.getTypeName()))
-        .createWith(asyncProducer);
+        .createWith(cc -> new CDIAsync(at.getJavaClass()));
   }
 
   void afterDeploymentValidation(@Observes AfterDeploymentValidation abd, BeanManager beanManager)
@@ -244,4 +224,5 @@ public class StreamExtension implements Extension {
 
     logger.info("StreamExtension initialized");
   }
+
 }

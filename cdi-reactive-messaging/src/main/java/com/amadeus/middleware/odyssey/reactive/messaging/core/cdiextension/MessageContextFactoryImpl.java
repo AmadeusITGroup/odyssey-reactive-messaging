@@ -8,11 +8,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.CDI;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
@@ -24,39 +24,38 @@ public class MessageContextFactoryImpl implements MessageContextFactory {
 
   private Map<Class<? extends MessageContext>, Class<?>> factoryClasses = new ConcurrentHashMap<>();
 
-  private BeanManager beanManager;
-
-  MessageContextFactoryImpl(BeanManager beanManager) {
-    this.beanManager = beanManager;
-  }
-
+  @Override
   public void add(Class<? extends MessageContext> returnType, Method builder) {
     builders.put(returnType, builder);
   }
 
+  @Override
   public void add(Class<? extends MessageContext> returnType, Class<?> factoryClass) {
     factoryClasses.put(returnType, factoryClass);
   }
 
+  @Override
   public Set<Class<? extends MessageContext>> getMessageContext() {
     return builders.keySet();
   }
 
-  @SuppressWarnings("rawtypes")
+  @Override
   public MessageContext create(Class<? extends MessageContext> type)
       throws InvocationTargetException, IllegalAccessException {
     logger.trace("creation of {}", type.getName());
+
+    // TODO: remove this CDI lookup
+    BeanManager beanManager = CDI.current()
+        .getBeanManager();
     Instance<Object> instance = beanManager.createInstance();
     Instance<?> theFactory = instance.select(factoryClasses.get(type));
-    Instance<Message> message = instance.select(Message.class);
+
     if (theFactory.isResolvable()) {
       Object tf = theFactory.get();
       for (Method m : tf.getClass()
           .getMethods()) {
         if (m.isAnnotationPresent(MessageContextBuilder.class)) {
           MessageContext pojoMessageContext = (MessageContext) m.invoke(tf);
-          message.get()
-              .addContext(pojoMessageContext);
           return pojoMessageContext;
         }
       }
