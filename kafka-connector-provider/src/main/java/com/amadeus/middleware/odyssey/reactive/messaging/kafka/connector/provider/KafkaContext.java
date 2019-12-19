@@ -9,7 +9,7 @@ import java.util.List;
 
 @MessageScoped
 public interface KafkaContext extends MessageContext {
-  String KEY = "MY_KAFKA_IMPLEMENTATION";
+  String KEY = "MY_KAFKA_IMPLEMENTATION.KafkaContext";
 
   String topic();
 

@@ -43,7 +43,7 @@ public class MyAdvancedProcessor {
   private Async<Message<String>> agmsg;
 
   @Incoming("internal_channel")
-  @Outgoing("output_channel")
+  @Outgoing("kafka_channel")
   public void stage4(KafkaContext kc, Async<KafkaContext> akc, EventContext ec, Async<EventContext> aec,
       Message<String> msg, Async<Message<String>> amsg, Object payload) {
 

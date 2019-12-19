@@ -11,6 +11,7 @@ public interface Message<T> {
 
   <C extends MessageContext> C getMessageContext(String key);
 
+  // TODO: Right now, simply adding a context directly into the Message doesn't make it injectable...
   void addContext(MessageContext ctx);
 
   T getPayload();
