@@ -32,12 +32,12 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyBuilder;
 
 public class StreamExtension implements Extension {
   private static final Logger logger = LoggerFactory.getLogger(StreamExtension.class);
@@ -74,7 +74,6 @@ public class StreamExtension implements Extension {
     // Register the vetoed type
     messageContexts.add(event.getAnnotatedType());
   }
-
 
   // Here, the injection point will be transformed as follow:
   // Message<T> => Message

@@ -7,13 +7,13 @@ import java.util.function.Function;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.BeanManager;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 
 public class MessageContextProducer implements Function<CreationalContext<MessageContext>, MessageContext> {
   private static final Logger logger = LoggerFactory.getLogger(MessageContextProducer.class);

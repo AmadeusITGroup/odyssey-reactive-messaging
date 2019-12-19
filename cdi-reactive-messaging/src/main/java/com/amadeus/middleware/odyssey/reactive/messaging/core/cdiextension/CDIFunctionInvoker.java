@@ -12,16 +12,16 @@ import java.util.List;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.BeanManager;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.AsyncResolutionException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvoker;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
 
 public class CDIFunctionInvoker implements FunctionInvoker {
   private static final Logger logger = LoggerFactory.getLogger(CDIFunctionInvoker.class);

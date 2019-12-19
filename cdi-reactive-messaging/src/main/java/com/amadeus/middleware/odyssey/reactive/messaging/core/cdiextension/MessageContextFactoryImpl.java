@@ -9,13 +9,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.BeanManager;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 
 public class MessageContextFactoryImpl implements MessageContextFactory {
   private static final Logger logger = LoggerFactory.getLogger(MessageContextFactoryImpl.class);

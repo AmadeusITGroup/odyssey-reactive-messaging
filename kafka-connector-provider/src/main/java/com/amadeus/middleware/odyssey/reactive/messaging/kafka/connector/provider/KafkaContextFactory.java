@@ -2,8 +2,8 @@ package com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provid
 
 import javax.inject.Inject;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
 
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumerRecord;
 

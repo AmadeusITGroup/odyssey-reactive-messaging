@@ -24,7 +24,6 @@ import javax.enterprise.inject.spi.ProcessAnnotatedType;
 import javax.enterprise.inject.spi.ProcessInjectionPoint;
 import javax.enterprise.inject.spi.ProcessManagedBean;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
@@ -36,11 +35,12 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyBuilder;
 
 public class StreamExtension implements Extension {
 
@@ -197,7 +197,8 @@ public class StreamExtension implements Extension {
   }
 
   @SuppressWarnings("rawtypes")
-  void registerMessageScopedProducer(AfterBeanDiscovery abd, BeanManager beanManager, AnnotatedType<? extends MessageContext> at) {
+  void registerMessageScopedProducer(AfterBeanDiscovery abd, BeanManager beanManager,
+      AnnotatedType<? extends MessageContext> at) {
     Class<? extends MessageContext> clazz = at.getJavaClass();
 
     ///
