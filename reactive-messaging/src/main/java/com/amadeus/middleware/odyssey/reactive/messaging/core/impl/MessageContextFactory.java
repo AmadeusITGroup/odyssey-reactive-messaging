@@ -7,9 +7,8 @@ import java.util.Set;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 
 public interface MessageContextFactory {
-  void add(Class<? extends MessageContext> returnType, Method builder);
 
-  void add(Class<? extends MessageContext> returnType, Class<?> factoryClass);
+  void add(Class<? extends MessageContext> returnType, Class<?> factoryClass, Method builder);
 
   Set<Class<? extends MessageContext>> getMessageContext();
 

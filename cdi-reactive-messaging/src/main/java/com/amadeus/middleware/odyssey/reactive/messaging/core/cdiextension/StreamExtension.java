@@ -33,7 +33,6 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
@@ -43,7 +42,7 @@ public class StreamExtension implements Extension {
   private static final Logger logger = LoggerFactory.getLogger(StreamExtension.class);
 
   // Register it into ReactiveMessagingContext ?
-  private MessageContextFactory messageContextFactory = new MessageContextFactoryImpl();
+  private MessageContextFactoryImpl messageContextFactory = new MessageContextFactoryImpl();
 
   private TopologyBuilder builder = new TopologyBuilder();
   private List<AnnotatedType<?>> messageContexts = new ArrayList<>();
@@ -123,9 +122,8 @@ public class StreamExtension implements Extension {
         .forEach(annotatedMethod -> {
           Class<? extends MessageContext> returnType = (Class<? extends MessageContext>) annotatedMethod.getJavaMember()
               .getReturnType();
-          messageContextFactory.add(returnType, annotatedMethod.getJavaMember());
           messageContextFactory.add(returnType, event.getAnnotatedBeanClass()
-              .getJavaClass());
+              .getJavaClass(), annotatedMethod.getJavaMember());
         });
   }
 
@@ -215,8 +213,10 @@ public class StreamExtension implements Extension {
     logger.debug("AfterDeploymentValidation");
 
     ReactiveMessagingContext.setMessageContextFactory(messageContextFactory);
+    messageContextFactory.initialize(beanManager);
 
     Instance<Object> instance = beanManager.createInstance();
+
     // Build the topology
     builder.build(instance.select(Topology.class)
         .get());

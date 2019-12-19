@@ -8,60 +8,60 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.CDI;
+import javax.inject.Provider;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 
 public class MessageContextFactoryImpl implements MessageContextFactory {
   private static final Logger logger = LoggerFactory.getLogger(MessageContextFactoryImpl.class);
 
-  private Map<Class<? extends MessageContext>, Method> builders = new ConcurrentHashMap<>();
+  private static class InvokationTarget {
+    private Class<?> factoryClass;
+    private Method method;
+    private Provider<?> messageContextFactoryInstance;
 
-  private Map<Class<? extends MessageContext>, Class<?>> factoryClasses = new ConcurrentHashMap<>();
+    public InvokationTarget(Class<?> clazz, Method method) {
+      this.factoryClass = clazz;
+      this.method = method;
+    }
 
-  @Override
-  public void add(Class<? extends MessageContext> returnType, Method builder) {
-    builders.put(returnType, builder);
+    public MessageContext invoke() throws InvocationTargetException, IllegalAccessException {
+      return (MessageContext) method.invoke(messageContextFactoryInstance.get());
+    }
+
+    public Class<?> getFactoryClass() {
+      return factoryClass;
+    }
+  }
+
+  private Map<Class<? extends MessageContext>, InvokationTarget> invokationTargets = new ConcurrentHashMap<>();
+
+  public void initialize(BeanManager beanManager) {
+    logger.debug("initialize");
+    Instance<Object> instance = beanManager.createInstance();
+    for (InvokationTarget invokationTarget : invokationTargets.values()) {
+      invokationTarget.messageContextFactoryInstance = instance.select(invokationTarget.getFactoryClass());
+    }
   }
 
   @Override
-  public void add(Class<? extends MessageContext> returnType, Class<?> factoryClass) {
-    factoryClasses.put(returnType, factoryClass);
+  public void add(Class<? extends MessageContext> returnType, Class<?> factoryClass, Method builder) {
+    invokationTargets.put(returnType, new InvokationTarget(factoryClass, builder));
   }
 
   @Override
   public Set<Class<? extends MessageContext>> getMessageContext() {
-    return builders.keySet();
+    return invokationTargets.keySet();
   }
 
   @Override
   public MessageContext create(Class<? extends MessageContext> type)
       throws InvocationTargetException, IllegalAccessException {
-    logger.trace("creation of {}", type.getName());
-
-    // TODO: remove this CDI lookup
-    BeanManager beanManager = CDI.current()
-        .getBeanManager();
-    Instance<Object> instance = beanManager.createInstance();
-    Instance<?> theFactory = instance.select(factoryClasses.get(type));
-
-    if (theFactory.isResolvable()) {
-      Object tf = theFactory.get();
-      for (Method m : tf.getClass()
-          .getMethods()) {
-        if (m.isAnnotationPresent(MessageContextBuilder.class)) {
-          MessageContext pojoMessageContext = (MessageContext) m.invoke(tf);
-          return pojoMessageContext;
-        }
-      }
-    }
-    // TODO: Throw
-    return (MessageContext) builders.get(type)
-        .invoke(null);
+    return invokationTargets.get(type)
+        .invoke();
   }
 }
