@@ -49,6 +49,7 @@ public class CDIReactiveStreams {
       }
     }
 
+    @SuppressWarnings("unchecked")
     @Setup(Level.Iteration)
     public void setup() {
       container = SeContainerInitializer.newInstance()
@@ -73,11 +74,11 @@ public class CDIReactiveStreams {
   }
 
   public static int invoked(MyState state, int i, Blackhole blackhole) {
-    Message msg = null;
+    Message<String> msg = null;
     try {
-      msg = new CDIMessageBuilderImpl().payload("")
+      msg = new CDIMessageBuilderImpl<String>().payload("")
           .build();
-      MessageImpl msgImpl = (MessageImpl) msg;
+      MessageImpl<String> msgImpl = (MessageImpl<String>) msg;
       MessageScopedContext.getInstance()
           .start(msgImpl.getScopeContextId());
 
@@ -98,7 +99,7 @@ public class CDIReactiveStreams {
       }
       if (msg != null) {
         MessageScopedContext.getInstance()
-            .destroy(((MessageImpl) msg).getScopeContextId());
+            .destroy(((MessageImpl<String>) msg).getScopeContextId());
       }
     }
     return state.counter;

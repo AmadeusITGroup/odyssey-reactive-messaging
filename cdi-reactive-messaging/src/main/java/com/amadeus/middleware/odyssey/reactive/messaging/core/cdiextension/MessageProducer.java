@@ -14,6 +14,7 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 public class MessageProducer {
   private static final Logger logger = LoggerFactory.getLogger(MessageProducer.class);
 
+  @SuppressWarnings("rawtypes")
   @Produces
   @MessageScoped
   public static Message produceMessage(BeanManager beanManager) {

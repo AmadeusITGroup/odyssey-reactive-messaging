@@ -4,7 +4,7 @@ public interface MessageContext {
 
   /**
    * Merge this instance and the given MessageContext into a new single instance.
-   * The dynamic instances should be of the same type.
+   * The instances should be of the same dynamic type.
    * @param messageContexts
    * @return
    */

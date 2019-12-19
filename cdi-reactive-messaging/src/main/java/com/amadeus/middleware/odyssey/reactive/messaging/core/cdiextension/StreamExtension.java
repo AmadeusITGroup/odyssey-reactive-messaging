@@ -49,16 +49,17 @@ public class StreamExtension implements Extension {
   private MessageContextFactory messageContextFactory;
 
   private TopologyBuilder builder = new TopologyBuilder();
-  private List<AnnotatedType> messageContexts = new ArrayList<>();
+  private List<AnnotatedType<? extends MessageContext>> messageContexts = new ArrayList<>();
 
   public void registerScope(@Observes BeforeBeanDiscovery bbd, BeanManager beanManager) {
     bbd.addScope(MessageScoped.class, true, false);
     messageContextFactory = new MessageContextFactoryImpl(beanManager);
   }
 
+  @SuppressWarnings("unchecked")
   <T> void vetoAllMessageContextTypes(@Observes ProcessAnnotatedType<T> event) {
 
-    Class theClass = event.getAnnotatedType()
+    Class<?> theClass = event.getAnnotatedType()
         .getJavaClass();
 
     logger.trace("vetoAllMessageContextTypes = {}", theClass);
@@ -80,7 +81,7 @@ public class StreamExtension implements Extension {
     event.veto();
 
     // Register the vetoed type
-    messageContexts.add(event.getAnnotatedType());
+    messageContexts.add((AnnotatedType<? extends MessageContext>) event.getAnnotatedType());
   }
 
   <T, X> void reshapeParameterizedInjectionPoint(@Observes ProcessInjectionPoint<T, X> event) {
@@ -116,6 +117,7 @@ public class StreamExtension implements Extension {
     }
   }
 
+  @SuppressWarnings("unchecked")
   <T> void processManagedBean(@Observes ProcessManagedBean<T> event, BeanManager beanManager) {
     AnnotatedType<?> annotatedType = event.getAnnotatedBeanClass();
     annotatedType.getMethods()
@@ -127,7 +129,7 @@ public class StreamExtension implements Extension {
         .stream()
         .filter(m -> m.isAnnotationPresent(MessageContextBuilder.class))
         .forEach(annotatedMethod -> {
-          Class<?> returnType = annotatedMethod.getJavaMember()
+          Class<? extends MessageContext> returnType = (Class<? extends MessageContext>) annotatedMethod.getJavaMember()
               .getReturnType();
           messageContextFactory.add(returnType, annotatedMethod.getJavaMember());
           messageContextFactory.add(returnType, event.getAnnotatedBeanClass()
@@ -166,7 +168,7 @@ public class StreamExtension implements Extension {
 
   private void processFlowingPublisher(AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
 
-    PublisherInvoker publisherInvoker = new PublisherInvoker(annotatedType.getJavaClass(), method.getJavaMember());
+    PublisherInvoker<?> publisherInvoker = new PublisherInvoker<>(annotatedType.getJavaClass(), method.getJavaMember());
     Stream<String> os = method.getAnnotations(Outgoing.class)
         .stream()
         .map(annotation -> ((Outgoing) annotation).value());
@@ -181,7 +183,6 @@ public class StreamExtension implements Extension {
 
   }
 
-  @SuppressWarnings("unchecked")
   public void afterBeanDiscovery(@Observes AfterBeanDiscovery abd, BeanManager beanManager) {
     logger.trace("Registering MessageScopedContext");
 

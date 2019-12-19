@@ -48,6 +48,7 @@ public class MessageImpl<T> implements Message<T> {
     messageContexts.add(ctx);
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public <C extends MessageContext> C getMessageContext(String key) {
     for (MessageContext mc : getContexts()) {

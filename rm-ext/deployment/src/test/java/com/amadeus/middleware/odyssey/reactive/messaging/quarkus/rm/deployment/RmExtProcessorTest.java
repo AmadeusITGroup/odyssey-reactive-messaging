@@ -1,8 +1,6 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.deployment;
 
-import com.google.inject.matcher.Matchers;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.restassured.RestAssured;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;

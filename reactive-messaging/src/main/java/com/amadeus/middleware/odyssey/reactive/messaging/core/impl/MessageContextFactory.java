@@ -7,11 +7,11 @@ import java.lang.reflect.Method;
 import java.util.Set;
 
 public interface MessageContextFactory {
-  void add(Class returnType, Method builder);
+  void add(Class<? extends MessageContext> returnType, Method builder);
 
-  void add(Class returnType, Class factoryClass);
+  void add(Class<? extends MessageContext>  returnType, Class<?> factoryClass);
 
-  Set<Class> getMessageContext();
+  Set<Class<? extends MessageContext>> getMessageContext();
 
-  MessageContext create(Class type) throws InvocationTargetException, IllegalAccessException;
+  MessageContext create(Class<? extends MessageContext>  type) throws InvocationTargetException, IllegalAccessException;
 }

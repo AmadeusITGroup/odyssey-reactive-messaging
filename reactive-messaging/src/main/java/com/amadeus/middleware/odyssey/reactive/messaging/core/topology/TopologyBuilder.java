@@ -17,19 +17,21 @@ public class TopologyBuilder {
 
   private List<ProcessorNode> processorNodes = new ArrayList<>();
 
-  private List<PublisherNode> publisherNodes = new ArrayList<>();
+  private List<PublisherNode<?>> publisherNodes = new ArrayList<>();
 
-  private List<SubscriberNode> subscriberNodes = new ArrayList<>();
+  private List<SubscriberNode<?>> subscriberNodes = new ArrayList<>();
 
   public void addProcessor(String name, FunctionInvoker functionInvoker, String[] inputChannels,
       String[] outputChannels) {
     processorNodes.add(new ProcessorNode(name, functionInvoker, inputChannels, outputChannels));
   }
 
-  public <T> void addPublisher(String name, PublisherInvoker publisherInvoker, String... outputChannels) {
+  @SuppressWarnings({ "unchecked", "rawtypes" })
+  public <T> void addPublisher(String name, PublisherInvoker<?> publisherInvoker, String... outputChannels) {
     publisherNodes.add(new PublisherNode(name, publisherInvoker, outputChannels));
   }
 
+  @SuppressWarnings({ "unchecked", "rawtypes" })
   public <T> void addSubscriber(String name, Subscriber<T> subscriber, String... channelName) {
     subscriberNodes.add(new SubscriberNode(name, subscriber, channelName));
   }
@@ -55,13 +57,13 @@ public class TopologyBuilder {
   public Topology build(Topology topology) {
     Map<String, ChannelBinding> channelToBinding = new HashMap<>();
 
-    for (PublisherNode cp : publisherNodes) {
+    for (PublisherNode<?> cp : publisherNodes) {
       cp.getChildren()
           .forEach((channel, node) -> channelToBinding.computeIfAbsent(channel, c -> new ChannelBinding())
               .addProducer(cp));
     }
 
-    for (SubscriberNode cp : subscriberNodes) {
+    for (SubscriberNode<?> cp : subscriberNodes) {
       cp.getParents()
           .forEach((channel, node) -> channelToBinding.computeIfAbsent(channel, c -> new ChannelBinding())
               .addConsumer(cp));

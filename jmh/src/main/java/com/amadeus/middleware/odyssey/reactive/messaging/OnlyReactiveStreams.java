@@ -48,7 +48,7 @@ public class OnlyReactiveStreams {
   }
 
   public static int invoked(MyState state, int i, Blackhole blackhole) {
-    Message msg = new CDIMessageBuilderImpl().payload("")
+    Message<String> msg = new CDIMessageBuilderImpl<String>().payload("")
         .dependencyInjection(false)
         .build();
     blackhole.consume(msg);

@@ -11,12 +11,13 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvoker;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Node;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.ProcessorNode;
@@ -36,15 +37,16 @@ public class ReactiveStreamFactory {
   public void build(Topology topology) throws FunctionInvocationException {
     for (Node node : topology.getNodes()) {
       if (node instanceof PublisherNode) {
-        processPublisher((PublisherNode) node);
+        processPublisher((PublisherNode<?>) node);
       }
     }
   }
 
-  private void processPublisher(PublisherNode publisherNode) throws FunctionInvocationException {
+  @SuppressWarnings({ "rawtypes", "unchecked" })
+  private void processPublisher(PublisherNode<?> publisherNode) throws FunctionInvocationException {
     Instance<Object> instance = beanManager.createInstance();
 
-    PublisherInvoker publisherInvoker = publisherNode.getPublisherInvoker();
+    PublisherInvoker<?> publisherInvoker = publisherNode.getPublisherInvoker();
     Object targetPublisherInstance = instance.select(publisherInvoker.getTargetClass())
         .get();
     Publisher<?> publisher = publisherInvoker.invoke(targetPublisherInstance);
@@ -67,7 +69,7 @@ public class ReactiveStreamFactory {
             .get();
         pb = pb.peek(m -> {
           try {
-            functionInvoker.invoke(targetProcessorInstance, (MessageImpl) m);
+            functionInvoker.invoke(targetProcessorInstance, (Message<?>) m);
           } catch (FunctionInvocationException e) {
             logger.error("Failure", e);
           }
@@ -87,8 +89,8 @@ public class ReactiveStreamFactory {
           break;
         }
       } else if (SubscriberNode.class.isAssignableFrom(node.getClass())) {
-        SubscriberNode subscriberNode = (SubscriberNode) node;
-        pb.to(subscriberNode.getSubscriber())
+        SubscriberNode<?> subscriberNode = (SubscriberNode<?>) node;
+        pb.to((Subscriber) subscriberNode.getSubscriber())
             .run()
             .whenComplete((m, e) -> {
               if (e != null) {

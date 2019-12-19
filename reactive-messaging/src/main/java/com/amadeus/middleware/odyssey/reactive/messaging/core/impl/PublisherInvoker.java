@@ -4,7 +4,9 @@ import java.lang.reflect.Method;
 
 import org.reactivestreams.Publisher;
 
-public class PublisherInvoker {
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
+
+public class PublisherInvoker<T> {
 
   private Class<?> targetClass;
   private Method targetMethod;
@@ -18,9 +20,10 @@ public class PublisherInvoker {
     return targetClass;
   }
 
-  public Publisher<?> invoke(Object targetInstance) throws FunctionInvocationException {
+  @SuppressWarnings("unchecked")
+  public Publisher<Message<T>> invoke(Object targetInstance) throws FunctionInvocationException {
     try {
-      return (Publisher<?>) targetMethod.invoke(targetInstance);
+      return (Publisher<Message<T>>) targetMethod.invoke(targetInstance);
     } catch (Exception e) {
       throw new FunctionInvocationException(e);
     }
