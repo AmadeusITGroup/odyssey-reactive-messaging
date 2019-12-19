@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
-        <groupId>com.amadeus.middleware.odyssey-reactive-messaging</groupId>
         <artifactId>parent</artifactId>
+        <groupId>com.amadeus.middleware.odyssey-reactive-messaging</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
     <artifactId>cdi-reactive-messaging</artifactId>
 
@@ -17,6 +16,12 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
         </dependency>
 
         <dependency>
@@ -61,8 +66,7 @@
             <groupId>org.jboss.weld.se</groupId>
             <artifactId>weld-se-shaded</artifactId>
             <version>${weld-se-shaded.version}</version>
-            <scope>test</scope>
+            <!--scope>test</scope-->
         </dependency>
     </dependencies>
-
 </project>

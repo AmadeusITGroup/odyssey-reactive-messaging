@@ -1,38 +1,29 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.BeanManager;
-
-import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
-import org.apache.commons.lang3.reflect.TypeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.AsyncResolutionException;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvoker;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
 
 public class CDIFunctionInvoker implements FunctionInvoker {
   private static final Logger logger = LoggerFactory.getLogger(CDIFunctionInvoker.class);
 
-  private BeanManager beanManager;
   private Class<?> targetClass;
   private Method targetMethod;
 
-  public CDIFunctionInvoker(BeanManager beanManager, Class<?> targetClass, Method targetMethod) {
+  public CDIFunctionInvoker(Class<?> targetClass, Method targetMethod) {
     this.targetClass = targetClass;
-    this.beanManager = beanManager;
     this.targetMethod = targetMethod;
   }
 
@@ -44,8 +35,8 @@ public class CDIFunctionInvoker implements FunctionInvoker {
     MessageImpl<?> messageImpl = (MessageImpl<?>) message;
     MessageScopedContext context = MessageScopedContext.getInstance();
     context.start(messageImpl.getScopeContextId());
+    Object[] parameters = buildParameters(message);
     try {
-      Object[] parameters = buildParameters(message);
       return targetMethod.invoke(targetInstance, parameters);
     } catch (Exception e) {
       throw new FunctionInvocationException(e);
@@ -57,8 +48,8 @@ public class CDIFunctionInvoker implements FunctionInvoker {
   // This should be called within the scope of an
   // active MessageContext
   private Object[] buildParameters(Message<?> message) {
-    Instance<Object> instance = beanManager.createInstance();
     List<Object> parameters = new ArrayList<>();
+    MessageScopedContext msc = MessageScopedContext.getInstance();
     for (Parameter param : targetMethod.getParameters()) {
 
       // Special handling of Async as it is a parameterized type
@@ -68,29 +59,16 @@ public class CDIFunctionInvoker implements FunctionInvoker {
         if (ParameterizedType.class.isAssignableFrom(parameterType.getClass())) {
           parameterType = ((ParameterizedType) parameterType).getRawType();
         }
-        type = TypeUtils.parameterize(Async.class, parameterType);
-        ArrayList<Annotation> annotations = new ArrayList<Annotation>();
-        if (param.getAnnotations() != null) {
-          Arrays.stream(param.getAnnotations())
-              .forEach(a -> annotations.add(a));
-        }
-
-        annotations.add(new TypeAnnotationLiteral(type.getTypeName()));
-        Instance<?> asyncInstance = instance.select(new TypeAnnotationLiteral(type.getTypeName()))
-            .select(param.getType());
-        if (asyncInstance.isResolvable()) {
-          parameters.add(asyncInstance.get());
-        } else {
-          throw new AsyncResolutionException("Cannot resolve parameter for " + targetMethod.toString() + ": "
-              + type.getTypeName() + " " + param.getName());
-        }
+        Class<?> clazz = (Class<?>) parameterType;
+        parameters.add(new CDIAsync<>(clazz));
         continue;
       }
 
-      // Regular CDI case
-      Instance<?> ip = (Instance<?>) instance.select(param.getType(), param.getAnnotations());
-      if (ip.isResolvable()) {
-        parameters.add(ip.get());
+      // Message Scoped object
+      Class<?> clazz = (Class<?>) param.getType();
+      Object object = msc.get(clazz);
+      if (object != null) {
+        parameters.add(object);
         continue;
       }
 

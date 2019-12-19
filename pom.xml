@@ -15,7 +15,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <version.compiler.plugin>3.8.1</version.compiler.plugin>
-
+        <maven-checkstyle-plugin.version>3.0.0</maven-checkstyle-plugin.version>
         <cdi-api.version>2.0</cdi-api.version>
         <slf4j.version>1.7.25</slf4j.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
@@ -33,7 +33,6 @@
         <module>business-app</module>
         <module>jmh</module>
         <module>rm-ext</module>
-        <module>cdi2-reactive-messaging</module>
     </modules>
 
     <build>
@@ -85,4 +84,39 @@
         </pluginManagement>
     </build>
 
+    <profiles>
+        <profile>
+            <id>checkstyle</id>
+            <activation>
+                <file>
+                    <exists>${basedir}/../checkstyle.xml</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <version>${maven-checkstyle-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>validate</id>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <configLocation>${basedir}/../checkstyle.xml</configLocation>
+                                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                                    <encoding>UTF-8</encoding>
+                                    <consoleOutput>true</consoleOutput>
+                                    <failsOnError>true</failsOnError>
+                                </configuration>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

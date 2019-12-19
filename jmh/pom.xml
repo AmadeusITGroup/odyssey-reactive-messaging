@@ -57,6 +57,11 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.amadeus.middleware.odyssey-reactive-messaging</groupId>
+            <artifactId>cdi-reactive-messaging</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
 
         <dependency>
             <groupId>org.jboss.weld.se</groupId>
@@ -64,33 +69,6 @@
             <version>${weld-se-shaded.version}</version>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>cdi</id>
-            <dependencies>
-                <dependency>
-                    <groupId>com.amadeus.middleware.odyssey-reactive-messaging</groupId>
-                    <artifactId>cdi-reactive-messaging</artifactId>
-                    <version>0.0.1-SNAPSHOT</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>cdi2</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.amadeus.middleware.odyssey-reactive-messaging</groupId>
-                    <artifactId>cdi2-reactive-messaging</artifactId>
-                    <version>0.0.1-SNAPSHOT</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
-
 
     <build>
         <plugins>

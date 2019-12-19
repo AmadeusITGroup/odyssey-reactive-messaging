@@ -1,9 +1,8 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 
-// Just for fun, let's have the implementation separated from the interface
 @MessageScoped
 public interface EventContext extends MessageContext {
   String getUniqueMessageId();

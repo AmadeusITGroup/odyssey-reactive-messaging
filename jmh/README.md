@@ -27,20 +27,6 @@ com.amadeus.middleware.odyssey.reactive.messaging.OnlyReactiveStreams.reflective
 
 One operation is 1 000 000 integers flowing into a reactive stream with a method call and `Message` creation.
 
-Using `cdi-reactive-messaging` module:
-
-```
-Benchmark                            Mode  Cnt   Score   Error  Units
-CDIReactiveStreams.directCall       thrpt    3   0.711 ± 0.117  ops/s
-OnlyReactiveStreams.directCall      thrpt    3  18.161 ± 0.760  ops/s
-OnlyReactiveStreams.reflectiveCall  thrpt    3  20.275 ± 5.262  ops/s
-```
-
-Hence, this CDI prototype implementation is strongly impacting.
-A lot of time is spend into the bean instanciation at CDI container level.
-
-Using `cdi2-reactive-messaging` module:
-
 ```
 Benchmark                            Mode  Cnt   Score   Error  Units
 CDIReactiveStreams.directCall       thrpt    3   3.096 ± 0.431  ops/s
@@ -48,7 +34,6 @@ OnlyReactiveStreams.directCall      thrpt    3  18.186 ± 2.765  ops/s
 OnlyReactiveStreams.reflectiveCall  thrpt    3  20.467 ± 3.905  ops/s
 ```
 
-This other CDI implementation is less impacting.
 The hotspot is the creation of the `Map` for each message.
 Some optimization work is possible here.
 

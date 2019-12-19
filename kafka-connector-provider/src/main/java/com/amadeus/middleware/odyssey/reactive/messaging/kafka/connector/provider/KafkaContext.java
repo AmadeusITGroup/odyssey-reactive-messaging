@@ -1,11 +1,13 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
-import io.vertx.reactivex.kafka.client.producer.KafkaHeader;
+import java.util.List;
+
 import org.apache.kafka.common.record.TimestampType;
 
-import java.util.List;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
+
+import io.vertx.reactivex.kafka.client.producer.KafkaHeader;
 
 @MessageScoped
 public interface KafkaContext extends MessageContext {

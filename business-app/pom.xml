@@ -74,7 +74,7 @@
 
         <dependency>
             <groupId>com.amadeus.middleware.odyssey-reactive-messaging</groupId>
-            <artifactId>cdi2-reactive-messaging</artifactId>
+            <artifactId>cdi-reactive-messaging</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
