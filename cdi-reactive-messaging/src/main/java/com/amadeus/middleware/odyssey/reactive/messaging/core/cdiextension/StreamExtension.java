@@ -1,11 +1,16 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,6 +27,8 @@ import javax.enterprise.inject.spi.ProcessInjectionPoint;
 import javax.enterprise.inject.spi.ProcessManagedBean;
 
 import org.apache.commons.lang3.reflect.TypeUtils;
+import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
+import org.eclipse.collections.impl.multimap.set.UnifiedSetMultimap;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.slf4j.Logger;
@@ -32,8 +39,6 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
@@ -42,70 +47,90 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyB
 public class StreamExtension implements Extension {
   private static final Logger logger = LoggerFactory.getLogger(StreamExtension.class);
 
-  // Register it into ReactiveMessagingContext ?
-  private MessageContextFactory messageContextFactory = new MessageContextFactoryImpl();
+  private MessageContextFactoryImpl messageContextFactory = new MessageContextFactoryImpl();
 
   private TopologyBuilder builder = new TopologyBuilder();
-  private List<AnnotatedType<?>> messageContexts = new ArrayList<>();
+  private List<AnnotatedType<? extends MessageContext>> messageContexts = new ArrayList<>();
 
-  <T> void vetoAllMessageContextTypes(@Observes ProcessAnnotatedType<T> event) {
+  private MutableSetMultimap<Type, Type> baseToFullyParameterizedTypes = UnifiedSetMultimap.newMultimap();
 
+  @SuppressWarnings("rawtypes")
+  <T extends Async> void vetoAsync(@Observes ProcessAnnotatedType<T> event) {
+    event.veto();
+  }
+
+  <T extends MessageContext> void registerAndVetoMessageScopedMessageContexts(@Observes ProcessAnnotatedType<T> event) {
     Class<?> theClass = event.getAnnotatedType()
         .getJavaClass();
-
-    logger.trace("vetoAllMessageContextTypes = {}", theClass);
-    if (Async.class.isAssignableFrom(theClass)) {
-      event.veto();
-    }
-
-    // Skip non-MessageContext
-    if (!MessageContext.class.isAssignableFrom(theClass)) {
-      return;
-    }
-
-    // Check whether this is annotated with MessageScoped
     if (!AnnotationUtils.hasAnnotation(theClass, MessageScoped.class)) {
       return;
     }
-
-    logger.debug("veto {}", theClass.getName());
-    event.veto();
-
-    // Register the vetoed type
     messageContexts.add(event.getAnnotatedType());
+    logger.trace("Vetoing: {}", theClass.getName());
+    event.veto();
   }
 
-  // Here, the injection point will be transformed as follow:
-  // Message<T> => Message
-  // Async<WhatEver<T>> => Async<Whatever>
-  <T, X> void reshapeParameterizedInjectionPoint(@Observes ProcessInjectionPoint<T, X> event) {
-    Member member = event.getInjectionPoint()
+  <T, X> void registerAllMessageAndAsyncTypes(@Observes ProcessInjectionPoint<T, X> processInjectionPoint) {
+    Member member = processInjectionPoint.getInjectionPoint()
         .getMember();
     Class<?> dc = member.getDeclaringClass();
+    if (Field.class.isAssignableFrom(member.getClass())) {
+      registerAllMessageAndAsyncTypesInFields(dc, (Field) member);
+    } else if (Method.class.isAssignableFrom(member.getClass())) {
+      registerAllMessageAndAsyncTypesInMethods(dc, (Method) member);
+    } else if (Constructor.class.isAssignableFrom(member.getClass())) {
+      registerAllMessageAndAsyncTypesInConstructors(dc, (Constructor<?>) member);
+    }
+  }
 
+  private void registerAllMessageAndAsyncTypesInFields(Class<?> dc, Field member) {
     try {
       Field field = dc.getDeclaredField(member.getName());
       if (field != null) {
-        field.setAccessible(true);
-        if (field.getGenericType() instanceof ParameterizedType) {
-          ParameterizedType parameterizedType = (ParameterizedType) field.getGenericType();
-          if (Message.class.isAssignableFrom(field.getType())) {
-            event.configureInjectionPoint()
-                .type(Message.class);
-          } else if (Async.class.isAssignableFrom(field.getType())
-              && parameterizedType.getActualTypeArguments().length == 1) {
-            Type asyncTypeParameters = parameterizedType.getActualTypeArguments()[0];
-            if (asyncTypeParameters instanceof ParameterizedType) {
-              ParameterizedType pt = (ParameterizedType) asyncTypeParameters;
-              event.configureInjectionPoint()
-                  .type(TypeUtils.parameterize(Async.class, pt.getRawType()));
-            }
-          }
+        if (!field.isAccessible()) {
+          field.setAccessible(true);
         }
+        registerMessageAndAsyncType(field.getType(), field.getGenericType());
       }
     } catch (NoSuchFieldException e) {
-      // TODO: filter before this can happen
-      logger.warn("argh! {}.{}", dc.getName(), member.getName());
+      logger.error("Unable to access the field: {}.{} {}", dc.getName(), member.getName(), e);
+    }
+  }
+
+  private void registerAllMessageAndAsyncTypesInConstructors(Class<?> dc, Constructor<?> constructor) {
+    for (Parameter parameter : constructor.getParameters()) {
+      registerMessageAndAsyncType(parameter.getType(), parameter.getParameterizedType());
+    }
+  }
+
+  private void registerAllMessageAndAsyncTypesInMethods(Class<?> dc, Method method) {
+    for (Parameter parameter : method.getParameters()) {
+      registerMessageAndAsyncType(parameter.getType(), parameter.getParameterizedType());
+    }
+  }
+
+  private void registerMessageAndAsyncType(Class<?> clazz, Type type) {
+    if (!(type instanceof ParameterizedType)) {
+      return;
+    }
+    ParameterizedType parameterizedType = (ParameterizedType) type;
+    // Message -> Message<Whatever>
+    if (Message.class.isAssignableFrom(clazz) || MessageContext.class.isAssignableFrom(clazz)) {
+      if (!(parameterizedType.getActualTypeArguments()[0] instanceof WildcardType)) {
+        baseToFullyParameterizedTypes.put(clazz, type);
+      }
+      return;
+    }
+    // Async<X> -> Async<X<Whatever>>
+    if (!Async.class.isAssignableFrom(clazz) || (parameterizedType.getActualTypeArguments().length != 1)) {
+      return;
+    }
+    Type asyncTypeParameters = parameterizedType.getActualTypeArguments()[0];
+    if (asyncTypeParameters instanceof ParameterizedType) {
+      ParameterizedType pt = (ParameterizedType) asyncTypeParameters;
+      if (!(pt.getActualTypeArguments()[0] instanceof WildcardType)) {
+        baseToFullyParameterizedTypes.put(TypeUtils.parameterize(Async.class, pt.getRawType()), type);
+      }
     }
   }
 
@@ -123,9 +148,8 @@ public class StreamExtension implements Extension {
         .forEach(annotatedMethod -> {
           Class<? extends MessageContext> returnType = (Class<? extends MessageContext>) annotatedMethod.getJavaMember()
               .getReturnType();
-          messageContextFactory.add(returnType, annotatedMethod.getJavaMember());
           messageContextFactory.add(returnType, event.getAnnotatedBeanClass()
-              .getJavaClass());
+              .getJavaClass(), annotatedMethod.getJavaMember());
         });
   }
 
@@ -163,7 +187,6 @@ public class StreamExtension implements Extension {
         .map(annotation -> ((Outgoing) annotation).value());
     String[] outputChannels = os.collect(Collectors.toList())
         .toArray(new String[] {});
-
     builder.addPublisher(annotatedType.getJavaClass()
         .getName() + "."
         + method.getJavaMember()
@@ -171,52 +194,86 @@ public class StreamExtension implements Extension {
         publisherInvoker, outputChannels);
   }
 
-  @SuppressWarnings("rawtypes")
-  void afterBeanDiscovery(@Observes AfterBeanDiscovery abd) {
+  /**
+   * Register the required CDI producer for all the Message, MessageContext and Async types.
+   * 
+   * @param abd
+   *          CDI event
+   */
+  void registerProducers(@Observes AfterBeanDiscovery abd) {
+    registerMessageScopedClassProducer(abd, Message.class);
+    registerMessageScopedAsyncClassProducer(abd, Message.class);
 
-    abd.<MessageContext> addBean()
-        .types(Message.class)
-        .createWith(new ProxyProducer<>(Message.class));
-
-    ParameterizedType asyncType = TypeUtils.parameterize(Async.class, Message.class);
-
-    logger.debug("registering producer for MessageScoped.class: {}", asyncType);
-    abd.<Async> addBean()
-        .types(asyncType)
-        .createWith(cc -> new CDIAsync<>(Message.class));
-
-    logger.trace("Registering MessageScopedContext");
     messageContexts.stream()
         // Skip producer exposition for non-directly annotated classes
         .filter(annotatedType -> annotatedType.getJavaClass()
             .isAnnotationPresent(MessageScoped.class))
-        .forEach(annotatedType -> registerMessageScopedProducer(abd, annotatedType));
+        .forEach(annotatedType -> registerMessageContextRelatedProducers(abd, annotatedType));
   }
 
-  @SuppressWarnings({ "rawtypes", "unchecked" })
-  void registerMessageScopedProducer(AfterBeanDiscovery abd, AnnotatedType<?> at) {
-    Class<?> clazz = at.getJavaClass();
+  /**
+   * Register the CDI producers for an actual MessageContext, Async&lt;MessageContext&gt; and all of their used
+   * parameterized versions.
+   *
+   * @param abd
+   *          CDI event
+   * @param at
+   *          The MessageContext actual type.
+   */
+  void registerMessageContextRelatedProducers(AfterBeanDiscovery abd, AnnotatedType<?> at) {
+    registerMessageScopedClassProducer(abd, at.getJavaClass());
+    registerMessageScopedAsyncClassProducer(abd, at.getJavaClass());
+  }
 
-    logger.debug("registering producer for MessageScoped.class: {}", clazz.getName());
+  /**
+   * Register the CDI producer for a MessageScoped class and all of its used parameterized versions.
+   *
+   * @param abd
+   *          CDI event
+   * @param clazz
+   *          The MessageScoped class.
+   */
+  private void registerMessageScopedClassProducer(AfterBeanDiscovery abd, Class<?> clazz) {
+    Set<Type> messageScopedTypes = baseToFullyParameterizedTypes.get(clazz)
+        .toSet();
+    messageScopedTypes.add(clazz);
+    if (logger.isTraceEnabled()) {
+      messageScopedTypes.forEach(mt -> logger.trace("Registering producer for: {}", mt));
+    }
     abd.<MessageContext> addBean()
-        .types(clazz)
+        .types(messageScopedTypes)
         .createWith(new ProxyProducer<>(clazz));
-
-    ParameterizedType asyncType = TypeUtils.parameterize(Async.class, at.getJavaClass());
-
-    logger.debug("registering producer for MessageScoped.class: {}", asyncType);
-    abd.<Async> addBean()
-        .types(asyncType)
-        .createWith(cc -> new CDIAsync(at.getJavaClass()));
   }
 
-  void afterDeploymentValidation(@Observes AfterDeploymentValidation abd, BeanManager beanManager)
-      throws FunctionInvocationException {
+  /**
+   * Register the CDI producer for the Async&lt; <em>MessageScoped class</em> &gt; type and all of its used
+   * parameterized versions.
+   *
+   * @param abd
+   *          CDI event
+   */
+  @SuppressWarnings({ "rawtypes", "unchecked" })
+  private void registerMessageScopedAsyncClassProducer(AfterBeanDiscovery abd, Class<?> clazz) {
+    ParameterizedType asyncType = TypeUtils.parameterize(Async.class, clazz);
+    Set<Type> asyncMessageScopedTypes = baseToFullyParameterizedTypes.get(asyncType)
+        .toSet();
+    asyncMessageScopedTypes.add(asyncType);
+    if (logger.isTraceEnabled()) {
+      asyncMessageScopedTypes.forEach(mt -> logger.trace("Registering producer for: {}", mt));
+    }
+    abd.<Async> addBean()
+        .types(asyncMessageScopedTypes)
+        .createWith(cc -> new CDIAsync(clazz));
+  }
+
+  void afterDeploymentValidation(@Observes AfterDeploymentValidation abd, BeanManager beanManager) {
     logger.debug("AfterDeploymentValidation");
 
     ReactiveMessagingContext.setMessageContextFactory(messageContextFactory);
+    messageContextFactory.initialize(beanManager);
 
     Instance<Object> instance = beanManager.createInstance();
+
     // Build the topology
     builder.build(instance.select(Topology.class)
         .get());

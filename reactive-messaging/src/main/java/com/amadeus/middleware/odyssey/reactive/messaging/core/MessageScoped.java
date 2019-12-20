@@ -11,7 +11,6 @@ import javax.enterprise.context.NormalScope;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
-@NormalScope
 @Inherited
 @Documented
 public @interface MessageScoped {

@@ -31,6 +31,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections</artifactId>
+            <version>${eclipse-collections.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.amadeus.middleware.odyssey-reactive-messaging</groupId>
             <artifactId>reactive-messaging</artifactId>
             <version>0.0.1-SNAPSHOT</version>
