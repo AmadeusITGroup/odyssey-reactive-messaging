@@ -1,10 +1,14 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.context.ContextNotActiveException;
+
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.MutableLongObjectMapFactoryImpl;
+
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 
 public final class MessageScopedContext {
 
@@ -14,11 +18,12 @@ public final class MessageScopedContext {
     return INSTANCE;
   }
 
-  private static final ThreadLocal<String> ACTIVE_MESSAGE_SCOPE_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
+  private static final ThreadLocal<Long> ACTIVE_MESSAGE_SCOPE_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
-  private final ConcurrentHashMap<String, Map<Class<?>, Object>> cache = new ConcurrentHashMap<>();
+  private final MutableLongObjectMap<Message<?>> store = MutableLongObjectMapFactoryImpl.INSTANCE.<Message<?>> empty()
+      .asSynchronized();
 
-  public void start(String scopeId) {
+  public void start(Long scopeId) {
     Objects.requireNonNull(scopeId);
     if (ACTIVE_MESSAGE_SCOPE_THREAD_LOCAL.get() != null) {
       throw new IllegalStateException("An instance of the scope is already active");
@@ -33,33 +38,44 @@ public final class MessageScopedContext {
     ACTIVE_MESSAGE_SCOPE_THREAD_LOCAL.set(null);
   }
 
-  public void destroy(String scopeId) {
+  public void destroy(Long scopeId) {
     Objects.requireNonNull(scopeId);
-    if (cache.remove(scopeId) == null) {
+    if (store.remove(scopeId) == null) {
       throw new IllegalStateException("Destroying an unknown scopeId=" + scopeId);
     }
   }
 
-  public void add(String scopeId, Class<?> clazz, Object object) {
-    cache.computeIfAbsent(scopeId, key -> new ConcurrentHashMap<>())
-        .computeIfAbsent(clazz, key -> object);
+  public void add(Long scopeId, Message message) {
+    store.put(scopeId, message);
   }
 
   @SuppressWarnings("unchecked")
   public <T> T get(Class<T> clazz) {
-    String scopeId = ACTIVE_MESSAGE_SCOPE_THREAD_LOCAL.get();
+    Long scopeId = ACTIVE_MESSAGE_SCOPE_THREAD_LOCAL.get();
     if (scopeId == null) {
       throw new ContextNotActiveException();
     }
-    Map<Class<?>, Object> map = cache.get(scopeId);
-    if (map == null) {
+    Message message = store.get(scopeId);
+    if (message == null) {
       return null;
     }
-    Object object = map.get(clazz);
-    if (object == null) {
-      return null;
+    if (Message.class.isAssignableFrom(clazz)) {
+      return (T) message;
     }
-    return (T) object;
+    Object payload = message.getPayload();
+    if ((payload != null) && (payload.getClass()
+        .isAssignableFrom(clazz))) {
+      return (T) payload;
+    }
+    if (MessageContext.class.isAssignableFrom(clazz)) {
+      Iterable<MessageContext> it = message.getContexts();
+      for (MessageContext mc : it) {
+        if (clazz.isAssignableFrom(mc.getClass())) {
+          return (T) mc;
+        }
+      }
+    }
+    return null;
   }
 
   public boolean isActive() {

@@ -75,31 +75,23 @@ public class CDIReactiveStreams {
 
   public static int invoked(MyState state, int i, Blackhole blackhole) {
     Message<String> msg = null;
+    MessageScopedContext msc = MessageScopedContext.getInstance();
     try {
       msg = new CDIMessageBuilderImpl<String>().payload("")
           .build();
       MessageImpl<String> msgImpl = (MessageImpl<String>) msg;
-      MessageScopedContext.getInstance()
-          .start(msgImpl.getScopeContextId());
-
-      /*
-       * Instance<Message> messageInstance = state.container.getBeanManager() .createInstance() .select(Message.class);
-       * messageInstance.get() .getPayload();
-       */
+      msc.start(msgImpl.getScopeContextId());
       state.counter = i;
       blackhole.consume(state.counter);
-
+      blackhole.consume(msc.get(String.class));
     } catch (Exception e) {
       logger.error("", e);
     } finally {
-      if (MessageScopedContext.getInstance()
-          .isActive()) {
-        MessageScopedContext.getInstance()
-            .suspend();
+      if (msc.isActive()) {
+        msc.suspend();
       }
       if (msg != null) {
-        MessageScopedContext.getInstance()
-            .destroy(((MessageImpl<String>) msg).getScopeContextId());
+        msc.destroy(((MessageImpl<String>) msg).getScopeContextId());
       }
     }
     return state.counter;
