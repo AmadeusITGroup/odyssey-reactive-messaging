@@ -1,4 +1,4 @@
-package com.amadeus.middleware.experiment.cdi;
+package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
 import javax.inject.Inject;
 
@@ -12,7 +12,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension.MessageScopedContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
 
 @RunWith(Arquillian.class)

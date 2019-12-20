@@ -14,8 +14,12 @@ import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provide
 public class MyOutgoingProcessor {
   private static final Logger logger = LoggerFactory.getLogger(MyOutgoingProcessor.class);
 
-  @Inject
   private Message<String> message;
+
+  @Inject
+  public MyOutgoingProcessor(Message<String> message) {
+    this.message = message;
+  }
 
   @Incoming("output_channel")
   public void output() {

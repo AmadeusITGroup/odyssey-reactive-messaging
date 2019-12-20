@@ -3,8 +3,6 @@ package com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 
 public class EventContextImpl implements EventContext {
-  public final static String KEY = "MY_EVENT_IMPLEMENTATION";
-
   private String uniqueMessageId;
 
   private String eventKey;
