@@ -270,7 +270,7 @@ public class EventContextFactory {
   private Message<?> message;
 
   @MessageContextBuilder
-  public EventContext newMessageContext() {
+  public EventContext newMessageContext(KafkaContext direcKafkaContext) {
     EventContext ec = new EventContextImpl();
     ec.setEventKey((String) kafkaContext.key());
     String payload = (String) message.getPayload();
@@ -280,9 +280,7 @@ public class EventContextFactory {
 }
 ```
 
-Note 1: Method direct injection of parameters should be considered for performance, and when CDI is disabled.
-
-Note 2: Some additional logic could be added to handle creation order.
+Note: Some additional logic could be added to handle creation order.
 
 ### From one to n Messages
 

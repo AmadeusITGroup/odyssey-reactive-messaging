@@ -1,6 +1,5 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
@@ -10,6 +9,7 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextProducerException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.AbstractMessageBuilder;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
@@ -68,9 +68,9 @@ public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
         continue;
       }
       try {
-        MessageContext nmc = messageContextFactory.create(mcc);
+        MessageContext nmc = messageContextFactory.create(message, mcc);
         message.addContext(nmc);
-      } catch (InvocationTargetException | IllegalAccessException e) {
+      } catch (FunctionInvocationException e) {
         throw new MessageContextProducerException(e);
       }
     }

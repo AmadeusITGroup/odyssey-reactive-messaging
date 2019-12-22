@@ -8,7 +8,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.MutableLongObjectMapFactoryImpl;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.BaseFunctionInvoker;
 
 public final class MessageScopedContext {
 
@@ -59,23 +59,7 @@ public final class MessageScopedContext {
     if (message == null) {
       return null;
     }
-    if (Message.class.isAssignableFrom(clazz)) {
-      return (T) message;
-    }
-    Object payload = message.getPayload();
-    if ((payload != null) && (payload.getClass()
-        .isAssignableFrom(clazz))) {
-      return (T) payload;
-    }
-    if (MessageContext.class.isAssignableFrom(clazz)) {
-      Iterable<MessageContext> it = message.getContexts();
-      for (MessageContext mc : it) {
-        if (clazz.isAssignableFrom(mc.getClass())) {
-          return (T) mc;
-        }
-      }
-    }
-    return null;
+    return BaseFunctionInvoker.get(message, clazz);
   }
 
   public boolean isActive() {

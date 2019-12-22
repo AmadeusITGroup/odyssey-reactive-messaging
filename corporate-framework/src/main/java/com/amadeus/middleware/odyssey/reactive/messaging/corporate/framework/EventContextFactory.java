@@ -17,7 +17,7 @@ public class EventContextFactory {
   private Message<?> message;
 
   @MessageContextBuilder
-  public EventContext newMessageContext() {
+  public EventContext build(KafkaContext direcKafkaContext) {
     EventContext ec = new EventContextImpl();
     ec.setEventKey((String) kafkaContext.key());
     String payload = (String) message.getPayload();

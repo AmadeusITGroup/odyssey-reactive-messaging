@@ -1,9 +1,9 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.impl;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Set;
 
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 
 public interface MessageContextFactory {
@@ -12,5 +12,5 @@ public interface MessageContextFactory {
 
   Set<Class<? extends MessageContext>> getMessageContext();
 
-  MessageContext create(Class<? extends MessageContext> type) throws InvocationTargetException, IllegalAccessException;
+  MessageContext create(Message message, Class<? extends MessageContext> type) throws FunctionInvocationException;
 }
