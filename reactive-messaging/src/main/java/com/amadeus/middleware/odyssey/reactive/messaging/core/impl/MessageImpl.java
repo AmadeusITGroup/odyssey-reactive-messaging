@@ -13,7 +13,7 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 @Vetoed
 public class MessageImpl<T> implements Message<T> {
 
-  private String scopeContextId;
+  private Long scopeContextId;
 
   private List<MessageContext> messageContexts;
   private T payload;
@@ -27,11 +27,11 @@ public class MessageImpl<T> implements Message<T> {
     this.payload = payload;
   }
 
-  public void setScopeContextId(String scopeContextId) {
+  public void setScopeContextId(Long scopeContextId) {
     this.scopeContextId = scopeContextId;
   }
 
-  public String getScopeContextId() {
+  public Long getScopeContextId() {
     return scopeContextId;
   }
 

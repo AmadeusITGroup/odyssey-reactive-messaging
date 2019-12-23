@@ -1,6 +1,5 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
@@ -10,6 +9,8 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextProducerException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.AbstractMessageBuilder;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
 
@@ -38,57 +39,49 @@ public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
   }
 
   private void buildCdiContext(MessageImpl<T> message) {
-    // Get a new unique MessageScope identifier
-    String msi = Long.toString(messageScopeId.getAndIncrement());
-    logger.debug("new message with scopeid={}", msi);
+    long msi = messageScopeId.getAndIncrement();
     message.setScopeContextId(msi);
 
     // Build and populate the (sub-) context
     MessageScopedContext context = MessageScopedContext.getInstance();
-    boolean alreadyActive = context.isActive(); // if the context is already active don't reactivate/suspend it
+    boolean alreadyActive = context.isActive();
     if (!alreadyActive) {
       context.start(msi);
     }
     try {
-      // Attach the Message pojo to the CDI context so it can be used to back the Message cdi bean
-      context.add(msi, Message.class, message);
-
-      message.getContexts()
-          .forEach(msgCtx -> {
-            // TODO: make the actual implementation
-            // Register the messageContext using its interface annotated with @MessageScoped
-            // For now: assume it is its single first-interface..
-            Class<?> clazz = msgCtx.getClass();
-            clazz = clazz.getInterfaces()[0];
-            context.add(msi, clazz, msgCtx);
-          });
-
-      // Let's request to the CDI container for the MessageContext instanciation
-      if (ReactiveMessagingContext.getMessageContextFactory()
-          .getMessageContext() != null) {
-        mccloop: for (Class<? extends MessageContext> mcc : ReactiveMessagingContext.getMessageContextFactory()
-            .getMessageContext()) {
-
-          Iterable<MessageContext> mcs = message.getContexts();
-          for (MessageContext mc : mcs) {
-            if (mcc.isAssignableFrom(mc.getClass())) {
-              continue mccloop;
-            }
-          }
-          try {
-            MessageContext nmc = ReactiveMessagingContext.getMessageContextFactory()
-                .create(mcc);
-            message.addContext(nmc);
-            context.add(msi, mcc, nmc);
-          } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new MessageContextProducerException(e);
-          }
-        }
-      }
+      context.add(msi, message);
+      populateMessageWithAdditionalMessageContexts(message);
     } finally {
       if (!alreadyActive) {
         context.suspend();
       }
     }
+  }
+
+  private void populateMessageWithAdditionalMessageContexts(Message<T> message) {
+    MessageContextFactory messageContextFactory = ReactiveMessagingContext.getMessageContextFactory();
+    if (messageContextFactory.getMessageContext() == null) {
+      return;
+    }
+    for (Class<? extends MessageContext> mcc : messageContextFactory.getMessageContext()) {
+      if (isMessageContextInMessage(message, mcc)) {
+        continue;
+      }
+      try {
+        MessageContext nmc = messageContextFactory.create(message, mcc);
+        message.addContext(nmc);
+      } catch (FunctionInvocationException e) {
+        throw new MessageContextProducerException(e);
+      }
+    }
+  }
+
+  private boolean isMessageContextInMessage(Message<T> message, Class<? extends MessageContext> mcc) {
+    for (MessageContext mc : message.getContexts()) {
+      if (mcc.isAssignableFrom(mc.getClass())) {
+        return true;
+      }
+    }
+    return false;
   }
 }
