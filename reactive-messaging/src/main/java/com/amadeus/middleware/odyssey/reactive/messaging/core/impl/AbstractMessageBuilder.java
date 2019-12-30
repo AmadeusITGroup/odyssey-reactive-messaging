@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MutableMessageContext;
 
 public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
 
@@ -53,6 +54,25 @@ public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
     }
 
     for (Message<?> parent : parents) {
+
+      // Creating the child MessageContexts {
+      //  Obviously, this is quite limited at this stage:
+      //    * It is probably not optimal regarding performance.
+      //    * The merge of multi-parent MessageContext is not properly addressed so far.
+      for (MessageContext messageContext : parent.getContexts()) {
+        if (child.getMessageContext(messageContext.getIdentifyingKey()) != null) {
+          continue;
+        }
+        if (MutableMessageContext.class.isAssignableFrom(messageContext.getClass())) {
+          MutableMessageContext mmc = (MutableMessageContext) messageContext;
+          child.addContext(mmc.createChild());
+        } else {
+          child.addContext(messageContext);
+        }
+      }
+      // }
+
+      // Setup the acknowledgement link
       CompletableFuture<Void> newParentStagedAck = new CompletableFuture<>();
       CompletableFuture<Void> previousParentStagedAck = parent.getAndSetStagedAck(newParentStagedAck);
       CompletableFuture<Void> merged = CompletableFuture.allOf(newParentStagedAck, child.getMessageAck());

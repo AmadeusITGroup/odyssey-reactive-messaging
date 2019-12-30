@@ -8,13 +8,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
+import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaTarget;
 
 @ApplicationScoped
 public class MyOutgoingProcessor {
   private static final Logger logger = LoggerFactory.getLogger(MyOutgoingProcessor.class);
 
+  @Inject
   private Message<String> message;
+
+  @Inject
+  private EventContext ec;
 
   @Inject
   public MyOutgoingProcessor(Message<String> message) {
@@ -28,8 +33,8 @@ public class MyOutgoingProcessor {
     // Look for a possible KafkaTarget
     KafkaTarget kafkaTarget = message.getMessageContext(KafkaTarget.KEY);
     if (kafkaTarget != null) {
-      logger.debug("If I where a Kafka connector I would send to topic={} with key={}", kafkaTarget.topic(),
-          kafkaTarget.key());
+      logger.debug("If I where a Kafka connector I would send msgId={} to topic={} with key={}",
+          ec.getUniqueMessageId(), kafkaTarget.topic(), kafkaTarget.key());
     }
 
     message.getStagedAck()

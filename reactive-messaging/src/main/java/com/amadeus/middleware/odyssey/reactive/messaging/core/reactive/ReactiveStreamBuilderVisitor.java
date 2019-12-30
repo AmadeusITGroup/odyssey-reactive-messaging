@@ -26,7 +26,7 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Subscribe
 class ReactiveStreamBuilderVisitor extends AbstractVisitor {
   private static final Logger logger = LoggerFactory.getLogger(ReactiveStreamBuilderVisitor.class);
 
-  private PublisherBuilder<?> publisherBuilder;
+  private PublisherBuilder<Message<?>> publisherBuilder;
   private CompletionRunner<Void> completionRunner;
   private Instance<Object> instance;
 
@@ -50,7 +50,7 @@ class ReactiveStreamBuilderVisitor extends AbstractVisitor {
     Object targetPublisherInstance = instance.select(publisherInvoker.getTargetClass())
         .get();
     try {
-      Publisher<?> publisher = publisherInvoker.invoke(targetPublisherInstance);
+      Publisher<? extends Message<?>> publisher = publisherInvoker.invoke(targetPublisherInstance);
       publisherBuilder = ReactiveStreams.fromPublisher(publisher);
     } catch (FunctionInvocationException e) {
       logger.error("Failure", e);
@@ -59,15 +59,18 @@ class ReactiveStreamBuilderVisitor extends AbstractVisitor {
 
   private void build(ProcessorNode processorNode) {
     FunctionInvoker functionInvoker = processorNode.getFunctionInvoker();
-    Object targetProcessorInstance = instance.select(functionInvoker.getTargetClass())
-        .get();
-    publisherBuilder = publisherBuilder.peek(m -> {
-      try {
-        functionInvoker.invoke(targetProcessorInstance, (Message<?>) m);
-      } catch (FunctionInvocationException e) {
-        logger.error("Failure", e);
-      }
-    });
+
+    switch (functionInvoker.getSignature()) {
+      case UNKNOWN:
+        logger.error("Cannot build reactive stream for unknown function type");
+        break;
+      case DIRECT:
+        buildDirectFunction(functionInvoker);
+        break;
+      case PUBLISHER_PUBLISHER:
+        buildPublisherPublisher(functionInvoker);
+        break;
+    }
 
     // if there is no child, make the subscription
     if (processorNode.getChildren()
@@ -78,7 +81,30 @@ class ReactiveStreamBuilderVisitor extends AbstractVisitor {
     }
   }
 
-  private void build(SubscriberNode subscriberNode) {
+  private void buildDirectFunction(FunctionInvoker functionInvoker) {
+    Object targetProcessorInstance = instance.select(functionInvoker.getTargetClass())
+        .get();
+    publisherBuilder = publisherBuilder.peek(m -> {
+      try {
+        functionInvoker.invoke(targetProcessorInstance, (Message<?>) m);
+      } catch (FunctionInvocationException e) {
+        logger.error("Failure", e);
+      }
+    });
+  }
+
+  private void buildPublisherPublisher(FunctionInvoker functionInvoker) {
+    try {
+      Publisher<Message<?>> publisher = functionInvoker.invoke(instance.select(functionInvoker.getTargetClass())
+          .get(), publisherBuilder);
+      publisherBuilder = ReactiveStreams.fromPublisher(publisher);
+    } catch (FunctionInvocationException e) {
+      logger.error("Failure", e);
+    }
+  }
+
+  @SuppressWarnings({"unchecked", "rawtype"})
+  private void build(SubscriberNode<?> subscriberNode) {
     completionRunner = publisherBuilder.to((Subscriber) subscriberNode.getSubscriber());
     start();
   }

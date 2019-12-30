@@ -15,7 +15,7 @@ public class MyKafkaAwareProcessor {
   private static final Logger logger = LoggerFactory.getLogger(MyKafkaAwareProcessor.class);
 
   @Incoming("kafka_channel")
-  @Outgoing("output_channel")
+  @Outgoing("rxin")
   public void stage5(KafkaContext kafkaContext, KafkaTarget kafkaTarget) {
     kafkaTarget.topic("target_topic");
     kafkaTarget.key(kafkaContext.key());

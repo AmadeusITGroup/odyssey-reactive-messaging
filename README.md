@@ -671,6 +671,37 @@ However, the capacity to inject using CDI:
 
 * Might be interesting in case a lot of different context are to be injected.
 
+## Mixing with native reactive streams declaration
+
+*One example can be found in the module `business-app` in the class `MyRxJavaProcessor`.*
+
+The following processor signature has been prototyped `Publisher<Message<O>> method(Publisher<Message<I>> publisher)`.
+This enables to implement a processor with RxJava, e.g.:
+
+```java
+  public Publisher<Message<String>> stage6(Publisher<Message<String>> publisher) {
+    return Flowable.fromPublisher(publisher)
+        .flatMap(message -> {
+   
+          Message<String> child = Message.<String> builder()
+              .fromParent(message)
+              .payload(message.getPayload())
+              .build();
+   
+          KafkaTarget target = child.getMessageContext(KafkaTarget.KEY);
+          target.topic(target.topic() + "-child");
+   
+          return Flowable.fromArray(message, child);
+        })
+        .delay(1, TimeUnit.SECONDS);
+  }
+```
+
+Here, a child message is created with a different Kafka topic target and it is send with its parent into the reactive stream.
+
+Here, no injection can be used.
+However, reusing an injected `Emitter` using the `Async` mechanism might be possible (to investigate).
+
 ## Projects
  
 ### Structure
