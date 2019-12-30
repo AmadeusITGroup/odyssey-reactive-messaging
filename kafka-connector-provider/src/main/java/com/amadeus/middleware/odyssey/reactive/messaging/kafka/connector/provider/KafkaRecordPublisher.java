@@ -14,8 +14,8 @@ import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumer;
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumerRecord;
 
-public class KafkaProducer {
-  private static final Logger logger = LoggerFactory.getLogger(KafkaProducer.class);
+public class KafkaRecordPublisher {
+  private static final Logger logger = LoggerFactory.getLogger(KafkaRecordPublisher.class);
 
   private Vertx vertx = Vertx.vertx();
 
@@ -35,7 +35,7 @@ public class KafkaProducer {
     return consumer.toFlowable()
         .doOnEach(r -> logger.debug("producing {}", r.getValue()
             .key()))
-        .map(KafkaProducer::buildMessage);
+        .map(KafkaRecordPublisher::buildMessage);
   }
 
   private static Message<String> buildMessage(KafkaConsumerRecord<String, String> record) {
