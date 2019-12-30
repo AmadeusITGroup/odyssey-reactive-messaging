@@ -11,6 +11,8 @@ public interface Message<T> {
 
   <C extends MessageContext> C getMessageContext(String key);
 
+  boolean contains(Class<? extends MessageContext> messageContextClass);
+
   void addContext(MessageContext ctx);
 
   T getPayload();

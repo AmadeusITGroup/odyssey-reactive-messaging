@@ -254,14 +254,14 @@ Note: This context is not necessarily a CDI `Context` (...).
 *One example can be found in the module `corporate-framework`*
 
 It is possible to enrich the `Message` with additional `MessageContext(s)` when the message is built.
-To do so, the `MessageBuilder` will call method(s) annotated with `@MessageContextBuilder` in a bean.
+To do so, the `MessageBuilder` will call method(s) annotated with `@MessageInitializer` in a bean.
 
 The method will then be able to customize the message and, if needed, get access to other `MessageContext` as the
 bean can be injected.
 The injected `MessageContext` should be the one initially given to the builder to prevent issue with creation order.
 
 ```java
-public class EventContextFactory {
+public class EventContextMessageInitializer {
 
   @Inject
   private KafkaContext kafkaContext;
@@ -269,13 +269,14 @@ public class EventContextFactory {
   @Inject
   private Message<?> message;
 
-  @MessageContextBuilder
-  public EventContext newMessageContext(KafkaContext direcKafkaContext) {
+  @MessageInitializer
+  public void initialize(KafkaContext direcKafkaContext) {
     EventContext ec = new EventContextImpl();
     ec.setEventKey((String) kafkaContext.key());
+    message.addContext(ec);
+
     String payload = (String) message.getPayload();
     ec.setUniqueMessageId(payload.split("-")[0]);
-    return ec;
   }
 }
 ```

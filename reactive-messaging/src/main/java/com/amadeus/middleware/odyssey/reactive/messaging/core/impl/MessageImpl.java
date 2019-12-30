@@ -40,13 +40,7 @@ public class MessageImpl<T> implements Message<T> {
     return new ArrayList<>(messageContexts);
   }
 
-  @Override
-  public void addContext(MessageContext ctx) {
-    if (ctx == null) {
-      return;
-    }
-    messageContexts.add(ctx);
-  }
+
 
   @SuppressWarnings("unchecked")
   @Override
@@ -58,6 +52,24 @@ public class MessageImpl<T> implements Message<T> {
       }
     }
     return null;
+  }
+
+  @Override
+  public boolean contains(Class<? extends MessageContext> messageContextClass) {
+    for (MessageContext mc : messageContexts) {
+      if (messageContextClass.isAssignableFrom(mc.getClass())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public void addContext(MessageContext ctx) {
+    if (ctx == null) {
+      return;
+    }
+    messageContexts.add(ctx);
   }
 
   @Override

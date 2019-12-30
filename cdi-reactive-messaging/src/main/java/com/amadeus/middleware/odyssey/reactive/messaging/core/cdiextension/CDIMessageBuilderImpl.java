@@ -6,12 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextProducerException;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageInitializerException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.AbstractMessageBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageContextFactory;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageInitializerRegistry;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
 
 public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
@@ -50,7 +49,7 @@ public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
     }
     try {
       context.add(msi, message);
-      populateMessageWithAdditionalMessageContexts(message);
+      callInitializers(message);
     } finally {
       if (!alreadyActive) {
         context.suspend();
@@ -58,30 +57,12 @@ public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
     }
   }
 
-  private void populateMessageWithAdditionalMessageContexts(Message<T> message) {
-    MessageContextFactory messageContextFactory = ReactiveMessagingContext.getMessageContextFactory();
-    if (messageContextFactory.getMessageContext() == null) {
-      return;
+  private void callInitializers(Message<T> message) {
+    MessageInitializerRegistry messageContextFactory = ReactiveMessagingContext.getMessageInitializerRegistry();
+    try {
+      messageContextFactory.initialize(message);
+    } catch (FunctionInvocationException e) {
+      throw new MessageInitializerException(e);
     }
-    for (Class<? extends MessageContext> mcc : messageContextFactory.getMessageContext()) {
-      if (isMessageContextInMessage(message, mcc)) {
-        continue;
-      }
-      try {
-        MessageContext nmc = messageContextFactory.create(message, mcc);
-        message.addContext(nmc);
-      } catch (FunctionInvocationException e) {
-        throw new MessageContextProducerException(e);
-      }
-    }
-  }
-
-  private boolean isMessageContextInMessage(Message<T> message, Class<? extends MessageContext> mcc) {
-    for (MessageContext mc : message.getContexts()) {
-      if (mcc.isAssignableFrom(mc.getClass())) {
-        return true;
-      }
-    }
-    return false;
   }
 }

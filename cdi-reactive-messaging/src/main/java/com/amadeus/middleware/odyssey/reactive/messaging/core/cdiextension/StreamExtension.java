@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageInitializer;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
@@ -47,7 +47,7 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyB
 public class StreamExtension implements Extension {
   private static final Logger logger = LoggerFactory.getLogger(StreamExtension.class);
 
-  private MessageContextFactoryImpl messageContextFactory = new MessageContextFactoryImpl();
+  private MessageInitializerRegistryImpl messageInitializerRegistry = new MessageInitializerRegistryImpl();
 
   private TopologyBuilder builder = new TopologyBuilder();
   private List<AnnotatedType<? extends MessageContext>> messageContexts = new ArrayList<>();
@@ -144,11 +144,9 @@ public class StreamExtension implements Extension {
 
     annotatedType.getMethods()
         .stream()
-        .filter(m -> m.isAnnotationPresent(MessageContextBuilder.class))
+        .filter(m -> m.isAnnotationPresent(MessageInitializer.class))
         .forEach(annotatedMethod -> {
-          Class<? extends MessageContext> returnType = (Class<? extends MessageContext>) annotatedMethod.getJavaMember()
-              .getReturnType();
-          messageContextFactory.add(returnType, event.getAnnotatedBeanClass()
+          messageInitializerRegistry.add(event.getAnnotatedBeanClass()
               .getJavaClass(), annotatedMethod.getJavaMember());
         });
   }
@@ -269,8 +267,8 @@ public class StreamExtension implements Extension {
   void afterDeploymentValidation(@Observes AfterDeploymentValidation abd, BeanManager beanManager) {
     logger.debug("AfterDeploymentValidation");
 
-    ReactiveMessagingContext.setMessageContextFactory(messageContextFactory);
-    messageContextFactory.initialize(beanManager);
+    ReactiveMessagingContext.setMessageInitializerRegistry(messageInitializerRegistry);
+    messageInitializerRegistry.initialize(beanManager);
 
     Instance<Object> instance = beanManager.createInstance();
 

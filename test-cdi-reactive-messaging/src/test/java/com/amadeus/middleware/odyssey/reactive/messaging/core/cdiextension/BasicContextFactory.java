@@ -1,15 +1,13 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
-import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventContext;
-import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventContextImpl;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageInitializer;
 
 import javax.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class BasicContextFactory {
 
-  @MessageContextBuilder
+  @MessageInitializer
   public BasicContext build() {
     return new BasicContextImpl();
   }

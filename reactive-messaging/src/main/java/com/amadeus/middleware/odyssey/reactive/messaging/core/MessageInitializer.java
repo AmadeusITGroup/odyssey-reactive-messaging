@@ -14,5 +14,5 @@ import javax.enterprise.context.NormalScope;
 @NormalScope
 @Inherited
 @Documented
-public @interface MessageContextBuilder {
+public @interface MessageInitializer {
 }
