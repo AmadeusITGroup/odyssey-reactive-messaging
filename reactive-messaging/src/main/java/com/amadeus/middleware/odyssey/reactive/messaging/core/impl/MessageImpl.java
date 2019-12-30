@@ -89,4 +89,33 @@ public class MessageImpl<T> implements Message<T> {
   public String toString() {
     return "{" + "messageContexts=" + messageContexts + ", payload=" + payload + '}';
   }
+
+  /**
+   * Get for a message instance and a type the associated value.
+   *
+   * The type can be <code>Message</code>, the payload type, or a <code>MessageContext</code>.
+   */
+  @SuppressWarnings("unchecked")
+  public static <T> T get(Message message, Class<T> clazz) {
+    if (message == null) {
+      return null;
+    }
+    if (Message.class.isAssignableFrom(clazz)) {
+      return (T) message;
+    }
+    Object payload = message.getPayload();
+    if ((payload != null) && (payload.getClass()
+      .isAssignableFrom(clazz))) {
+      return (T) payload;
+    }
+    if (MessageContext.class.isAssignableFrom(clazz)) {
+      Iterable<MessageContext> it = message.getContexts();
+      for (MessageContext mc : it) {
+        if (clazz.isAssignableFrom(mc.getClass())) {
+          return (T) mc;
+        }
+      }
+    }
+    return null;
+  }
 }
