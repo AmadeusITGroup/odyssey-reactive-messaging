@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 
 public class BaseFunctionInvoker implements FunctionInvoker {
   private static final Logger logger = LoggerFactory.getLogger(BaseFunctionInvoker.class);
@@ -49,13 +48,13 @@ public class BaseFunctionInvoker implements FunctionInvoker {
           parameterType = ((ParameterizedType) parameterType).getRawType();
         }
         Class<?> clazz = (Class<?>) parameterType;
-        parameters.add(new DirectAsync<>(BaseFunctionInvoker.get(message, clazz)));
+        parameters.add(new DirectAsync<>(MessageImpl.get(message, clazz)));
         continue;
       }
 
       // Message Scoped object
       Class<?> clazz = (Class<?>) param.getType();
-      Object object = BaseFunctionInvoker.get(message, clazz);
+      Object object = MessageImpl.get(message, clazz);
       if (object != null) {
         parameters.add(object);
         continue;
@@ -78,29 +77,5 @@ public class BaseFunctionInvoker implements FunctionInvoker {
       parameters.add(null);
     }
     return parameters.toArray();
-  }
-
-  @SuppressWarnings("unchecked")
-  public static <T> T get(Message message, Class<T> clazz) {
-    if (message == null) {
-      return null;
-    }
-    if (Message.class.isAssignableFrom(clazz)) {
-      return (T) message;
-    }
-    Object payload = message.getPayload();
-    if ((payload != null) && (payload.getClass()
-        .isAssignableFrom(clazz))) {
-      return (T) payload;
-    }
-    if (MessageContext.class.isAssignableFrom(clazz)) {
-      Iterable<MessageContext> it = message.getContexts();
-      for (MessageContext mc : it) {
-        if (clazz.isAssignableFrom(mc.getClass())) {
-          return (T) mc;
-        }
-      }
-    }
-    return null;
   }
 }

@@ -4,11 +4,11 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContextBuilder;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageInitializer;
 import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaContext;
 
 @ApplicationScoped
-public class EventContextFactory {
+public class EventContextMessageInitializer {
 
   @Inject
   private KafkaContext kafkaContext;
@@ -16,12 +16,13 @@ public class EventContextFactory {
   @Inject
   private Message<?> message;
 
-  @MessageContextBuilder
-  public EventContext build(KafkaContext direcKafkaContext) {
+  @MessageInitializer
+  public void initialize(KafkaContext direcKafkaContext) {
     EventContext ec = new EventContextImpl();
     ec.setEventKey((String) kafkaContext.key());
+    message.addContext(ec);
+
     String payload = (String) message.getPayload();
     ec.setUniqueMessageId(payload.split("-")[0]);
-    return ec;
   }
 }
