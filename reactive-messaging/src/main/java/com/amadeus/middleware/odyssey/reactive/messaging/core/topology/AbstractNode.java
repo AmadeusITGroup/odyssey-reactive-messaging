@@ -31,4 +31,12 @@ public abstract class AbstractNode implements Node {
   public void addChildren(String channelName, Node child) {
     children.put(channelName, child);
   }
+
+  public void accept(Visitor visitor) {
+    visitor.visit(this);
+    visitor.beforeChildren();
+    children.values()
+        .forEach(child -> child.accept(visitor));
+    visitor.afterChildren();
+  }
 }

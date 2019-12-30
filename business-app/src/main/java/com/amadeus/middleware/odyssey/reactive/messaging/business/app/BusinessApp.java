@@ -23,9 +23,9 @@ public class BusinessApp {
           .createInstance();
       Topology topology = instance.select(Topology.class)
           .get();
-      instance.select(ReactiveStreamFactory.class)
-          .get()
-          .build(topology);
+      ReactiveStreamFactory factory = instance.select(ReactiveStreamFactory.class)
+          .get();
+      factory.build(topology);
 
       Thread.sleep(600000);
     }
