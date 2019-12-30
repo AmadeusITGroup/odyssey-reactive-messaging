@@ -12,4 +12,13 @@ public interface Node {
   void addParent(String channelName, Node parent);
 
   void addChildren(String channelName, Node child);
+
+  /**
+   * The visitor will be triggered for current node, then for each of the child node.
+   *
+   * This is partial implementation as a tree structure of the reactive stream is assumed.
+   *
+   * @param visitor
+   */
+  void accept(Visitor visitor);
 }
