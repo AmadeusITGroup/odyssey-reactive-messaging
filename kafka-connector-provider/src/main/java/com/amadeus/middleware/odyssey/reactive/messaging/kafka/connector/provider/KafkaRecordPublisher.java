@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
 
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumer;
@@ -20,6 +21,7 @@ public class KafkaRecordPublisher {
   private Vertx vertx = Vertx.vertx();
 
   @Outgoing("input_channel")
+  @NodeName("KafkaPublisher")
   public Publisher<Message<String>> publish() {
     Map<String, String> config = new HashMap<>();
     config.put("bootstrap.servers", "127.0.0.1:9092");

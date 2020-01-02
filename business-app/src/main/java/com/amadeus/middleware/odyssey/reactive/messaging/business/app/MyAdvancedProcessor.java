@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
 import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaContext;
 
@@ -44,6 +45,7 @@ public class MyAdvancedProcessor {
 
   @Incoming("internal_channel")
   @Outgoing("kafka_channel")
+  @NodeName("stage4")
   public void stage4(KafkaContext kc, Async<KafkaContext> akc, EventContext ec, Async<EventContext> aec,
       Message<String> msg, Async<Message<String>> amsg, Object payload) {
 

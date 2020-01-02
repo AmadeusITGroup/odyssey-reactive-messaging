@@ -39,6 +39,7 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageInitializer;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
@@ -171,11 +172,7 @@ public class StreamExtension implements Extension {
         .map(annotation -> ((Outgoing) annotation).value());
     String[] outputChannels = os.collect(Collectors.toList())
         .toArray(new String[] {});
-    builder.addProcessor(annotatedType.getJavaClass()
-        .getName() + "."
-        + method.getJavaMember()
-            .getName(),
-        functionInvoker, inputChannels, outputChannels);
+    builder.addProcessor(getName(annotatedType, method), functionInvoker, inputChannels, outputChannels);
   }
 
   private void processFlowingPublisher(AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
@@ -185,11 +182,18 @@ public class StreamExtension implements Extension {
         .map(annotation -> ((Outgoing) annotation).value());
     String[] outputChannels = os.collect(Collectors.toList())
         .toArray(new String[] {});
-    builder.addPublisher(annotatedType.getJavaClass()
+    builder.addPublisher(getName(annotatedType, method), publisherInvoker, outputChannels);
+  }
+
+  private static String getName(AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
+    NodeName nodeName = method.getAnnotation(NodeName.class);
+    if (nodeName != null) {
+      return nodeName.value();
+    }
+    return annotatedType.getJavaClass()
         .getName() + "."
         + method.getJavaMember()
-            .getName(),
-        publisherInvoker, outputChannels);
+            .getName();
   }
 
   /**
