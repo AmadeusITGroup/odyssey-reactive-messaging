@@ -10,9 +10,9 @@ import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.AbstractVisitor;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Node;
@@ -82,11 +82,13 @@ class ReactiveStreamBuilderVisitor extends AbstractVisitor {
   }
 
   private void buildDirectFunction(FunctionInvoker functionInvoker) {
-    Object targetProcessorInstance = instance.select(functionInvoker.getTargetClass())
-        .get();
+    if (functionInvoker.getTargetInstance() == null) {
+      functionInvoker.setTargetInstance(instance.select(functionInvoker.getTargetClass())
+          .get());
+    }
     publisherBuilder = publisherBuilder.peek(m -> {
       try {
-        functionInvoker.invoke(targetProcessorInstance, (Message<?>) m);
+        functionInvoker.invoke((Message<?>) m);
       } catch (FunctionInvocationException e) {
         logger.error("Failure", e);
       }
@@ -103,7 +105,7 @@ class ReactiveStreamBuilderVisitor extends AbstractVisitor {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtype"})
+  @SuppressWarnings({ "unchecked", "rawtype" })
   private void build(SubscriberNode<?> subscriberNode) {
     completionRunner = publisherBuilder.to((Subscriber) subscriberNode.getSubscriber());
     start();

@@ -2,8 +2,6 @@ package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
 import java.lang.reflect.Method;
 
-import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
-import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +15,10 @@ public class CDIFunctionInvoker extends BaseFunctionInvoker {
 
   public CDIFunctionInvoker(Class<?> targetClass, Method targetMethod) {
     super(targetClass, targetMethod);
+  }
+
+  public CDIFunctionInvoker(Object defaultTargetInstance, Class<?> targetClass, Method targetMethod) {
+    super(defaultTargetInstance, targetClass, targetMethod);
   }
 
   public Object invoke(Object targetInstance, Message<?> message) throws FunctionInvocationException {

@@ -2,7 +2,7 @@ package com.amadeus.middleware.odyssey.reactive.messaging.core.topology;
 
 import java.util.Arrays;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvoker;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker;
 
 public class ProcessorNode extends AbstractNode {
   private FunctionInvoker functionInvoker;

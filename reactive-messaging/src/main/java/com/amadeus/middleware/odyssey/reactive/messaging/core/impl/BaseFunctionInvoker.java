@@ -1,8 +1,8 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.impl;
 
-import static com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvoker.Signature.DIRECT;
-import static com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvoker.Signature.PUBLISHER_PUBLISHER;
-import static com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvoker.Signature.UNKNOWN;
+import static com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker.Signature.DIRECT;
+import static com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker.Signature.PUBLISHER_PUBLISHER;
+import static com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker.Signature.UNKNOWN;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -10,6 +10,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.reactivestreams.Publisher;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 
 public class BaseFunctionInvoker implements FunctionInvoker {
@@ -24,12 +26,18 @@ public class BaseFunctionInvoker implements FunctionInvoker {
 
   private Class<?> targetClass;
   private Method targetMethod;
+  private Object defaultTargetInstance;
   private Signature signature;
 
   public BaseFunctionInvoker(Class<?> targetClass, Method targetMethod) {
     this.targetClass = targetClass;
     this.targetMethod = targetMethod;
     detectSignature();
+  }
+
+  public BaseFunctionInvoker(Object defaultTargetInstance, Class<?> targetClass, Method targetMethod) {
+    this(targetClass, targetMethod);
+    this.defaultTargetInstance = defaultTargetInstance;
   }
 
   private void detectSignature() {
@@ -88,6 +96,16 @@ public class BaseFunctionInvoker implements FunctionInvoker {
   }
 
   @Override
+  public void setTargetInstance(Object targetInstance) {
+    defaultTargetInstance = targetInstance;
+  }
+
+  @Override
+  public Object getTargetInstance() {
+    return defaultTargetInstance;
+  }
+
+  @Override
   public Object invoke(Object targetInstance, Message<?> message) throws FunctionInvocationException {
     Object[] parameters = buildParameters(message);
     try {
@@ -97,7 +115,14 @@ public class BaseFunctionInvoker implements FunctionInvoker {
     }
   }
 
-  @SuppressWarnings("unchecked")
+  @Override
+  public Object invoke(Message<?> message) throws FunctionInvocationException {
+    Objects.requireNonNull(defaultTargetInstance);
+    return invoke(defaultTargetInstance, message);
+  }
+
+
+    @SuppressWarnings("unchecked")
   @Override
   public Publisher<Message<?>> invoke(Object targetInstance, PublisherBuilder<Message<?>> publisherBuilder)
       throws FunctionInvocationException {
