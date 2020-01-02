@@ -18,14 +18,19 @@ public class KafkaMessageInitializer {
   public void initialize() {
 
     // If the MessageContext is already present, then do nothing.
-    // In this example, it will always be the case.
-    if (message.getMessageContext(KafkaContext.KEY) != null) {
+    if (message.hasMergeableContext(KafkaContext.MERGE_KEY)) {
       return;
     }
 
+    // If it is not a Kafka specific payload, do nothing.
+    if (!KafkaConsumerRecord.class.isAssignableFrom(message.getPayload()
+        .getClass())) {
+      return;
+    }
+
+    // Create the KafkaContext and set the value with the KafkaPayload
     KafkaConsumerRecord<String, String> kcr = (KafkaConsumerRecord<String, String>) message.getPayload();
     KafkaContextImpl ki = new KafkaContextImpl(kcr);
-
     message.addContext(ki);
     message.setPayload(kcr.value());
   }

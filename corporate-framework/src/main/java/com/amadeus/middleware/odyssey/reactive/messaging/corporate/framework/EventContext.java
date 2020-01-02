@@ -5,7 +5,8 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 
 @MessageScoped
 public interface EventContext extends MessageContext {
-  String KEY = "MY_EVENT_IMPLEMENTATION";
+  String KEY = "MY_EVENTCONTEXT";
+  String MERGE_KEY = KEY;
 
   String getUniqueMessageId();
 

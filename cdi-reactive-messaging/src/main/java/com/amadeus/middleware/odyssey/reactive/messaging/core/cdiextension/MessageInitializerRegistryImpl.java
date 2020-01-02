@@ -34,6 +34,10 @@ public class MessageInitializerRegistryImpl implements MessageInitializerRegistr
     public Class<?> getFactoryClass() {
       return functionInvoker.getTargetClass();
     }
+
+    public Method getMethod() {
+      return functionInvoker.getMethod();
+    }
   }
 
   private List<InvokationTarget> invokationTargets = new ArrayList<>();
@@ -54,7 +58,15 @@ public class MessageInitializerRegistryImpl implements MessageInitializerRegistr
   @Override
   public void initialize(Message message) throws FunctionInvocationException {
     for (InvokationTarget initalizer : invokationTargets) {
-      initalizer.invoke(message);
+      try {
+        initalizer.invoke(message);
+      } catch (Exception e) {
+        logger.error("Exception in the call of {}.{}", initalizer.getFactoryClass()
+            .getSimpleName(),
+            initalizer.getMethod()
+                .getName());
+        throw e;
+      }
     }
   }
 }

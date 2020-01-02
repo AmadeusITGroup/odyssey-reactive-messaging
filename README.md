@@ -476,17 +476,83 @@ Let's considere we have two different source connectors:
 
 ![hl](doc/context-merge.png)
 
-The *business processor* will issue the message `mC` from `mA` and `mB`.
+The *business processor* will issue the message `mC` from `mA` and `mB` with the following strategy:
 
-For each type of `MessageContext`, a new `MessageContext` should be associate to `mC` that has been built from the
+* For each type of `MessageContext`, a new `MessageContext` should be associate to `mC` that has been built from the
 merge of the instances of the same type coming from `mA` and `mB`.
 The merge strategy is typically to be provided by the `MessageContext` provider.
 
-The payload of `mC` has to be provided by the business developer.
+* The payload of `mC` has to be provided by the business developer.
 
-The `mC` message global acknowledgement is mandatory for the staged acknowledged of `mA` and `mB`.
+* The `mC` message global acknowledgement is mandatory for the staged acknowledged of `mA` and `mB`.
 
-Note: *The API is not prototyped so-far.*
+A concrete `MessageContext` type can either support naturally this merge, or not.
+Let's considere a Kafka `MessageContext`.
+It may indicate the source Kafka topic from where the message is coming but, in case of a merge,
+it might not have the capability to indicate the list of the several source topics:
+
+```java
+public interface KafkaContext extends MessageContext {
+  ...
+  String topic();
+  ...
+}
+```
+
+To achieve this, a new kind of Kafka `MessageContext` supporting multiple sources might be introduced:
+
+```java
+public interface MultiKafkaContext extends MutableMessageContext {
+  ...
+  List<KafkaContext> getContexts();
+  ...
+}
+```
+
+Ideally, from user perspective, when it is known that there is a single origin it would be wanted to deal with `KafkaContext`
+and, when it's not the case, `MultiKafkaContext` would be used.
+Hence, in our example, messages A and B would have a `KafkaContext` and message C would have a `MultiKafkaContext`.
+This means, the `MessageContext` provide should expose the capability to merge `KafkaContext(s)` and `MultiKafkaContext(s)` towards a `MultiKafkaContext`.
+
+To achieve this, `MessageContext` exposes the following method that is to be called by the framework when a *child* message is created:
+
+```java
+public interface MessageContext {
+  ...
+  MessageContext merge(MessageContext... messageContexts);
+  ...
+}
+```
+
+This method will be called to merge compatible `MessageContexts`.
+For instance, a `KafkaContext` and a `MultiKafkaContext` a compatible.
+However, a `KafkaContext` and RabbitMQ `MessageContext` are not compatible.
+In order for a set of `MessageContext` type to indicate their compatibility, the following `getContextMergeKey` method is also exposed in `MessageContext`:
+
+```java
+public interface MessageContext {
+  ...
+  String getContextMergeKey();
+  ...
+}
+```
+
+All the `MessageContext` that are compatible should return the same `String` value.
+The framework will call the `merge` method only for compatible type.
+
+Here is the representation of the merge of two messages coming from a Kafka source and a message coming
+for a RabbitMQ source:
+
+![hl](doc/example-merge.png)
+
+The two `KafkaContext` are merged as they return the same value when `getContextMergeKey()` is called.
+The result of the merge is producing a `MultiKafkaContext` that is also returning the same value for `getContextMergeKey()`.
+
+The `RabbitMQContext` is not merged as it returns a value not shared with other `MessageContext` for `getContextMergeKey()`.
+
+Note: Beyond child message creation, adding a `MessageContext` into a message is also resulting in calling this merge logic.
+
+*One example can be found in the module `reactive-messaging` in `MessageImplTest`.*
 
 ## CDI implementation
 

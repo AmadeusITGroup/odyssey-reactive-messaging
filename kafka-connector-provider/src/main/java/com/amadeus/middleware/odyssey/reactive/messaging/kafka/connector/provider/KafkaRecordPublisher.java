@@ -44,8 +44,8 @@ public class KafkaRecordPublisher {
     KafkaTarget kafkaTarget = new KafkaTargetImpl(null, null, kafkaContext.headers());
 
     Message<String> msg = Message.<String> builder()
-        .addMessageContext(kafkaContext)
-        .addMessageContext(kafkaTarget)
+        .addContext(kafkaContext)
+        .addContext(kafkaTarget)
         .payload(record.value())
         .build();
 

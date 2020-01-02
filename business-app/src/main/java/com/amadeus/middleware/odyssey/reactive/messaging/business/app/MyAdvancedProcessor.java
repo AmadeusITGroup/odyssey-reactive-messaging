@@ -67,7 +67,7 @@ public class MyAdvancedProcessor {
     logger.info("EventContext after POJO update direct={},cdi={}", ec, gec);
 
     // Yet another way, without injection, to get the KafkaContext
-    KafkaContext kc2 = msg.<KafkaContext> getMessageContext(KafkaContext.KEY);
+    KafkaContext kc2 = msg.<KafkaContext>getContext(KafkaContext.KEY);
     logger.debug("KafkaContext from message={}", kc2);
 
     // Let's start asynchronous processing with the message

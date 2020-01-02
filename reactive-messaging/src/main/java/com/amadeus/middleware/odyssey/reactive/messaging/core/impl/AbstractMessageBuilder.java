@@ -15,7 +15,7 @@ public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
   protected boolean dependencyInjection = true; // TODO: enable "global" configuration
 
   protected List<Message<?>> parents = new ArrayList<>();
-  protected List<MessageContext> messageContexts = new ArrayList<>();
+  protected List<MessageContext> contexts = new ArrayList<>();
   protected T payload;
 
   /**
@@ -25,7 +25,7 @@ public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
    * @return
    */
   @Override
-  public MessageBuilder<T> fromParent(Message<?>... parents) {
+  public MessageBuilder<T> fromParents(Message<?>... parents) {
     this.parents.addAll(Arrays.asList(parents));
     return this;
   }
@@ -37,8 +37,8 @@ public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
   }
 
   @Override
-  public MessageBuilder<T> addMessageContext(MessageContext messageContext) {
-    messageContexts.add(messageContext);
+  public MessageBuilder<T> addContext(MessageContext messageContext) {
+    contexts.add(messageContext);
     return this;
   }
 
@@ -54,29 +54,31 @@ public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
     }
 
     for (Message<?> parent : parents) {
+      mergeMessageContexts(parent, child);
+      setAcknowledgmentLink(parent, child);
+    }
+  }
 
-      // Creating the child MessageContexts {
-      //  Obviously, this is quite limited at this stage:
-      //    * It is probably not optimal regarding performance.
-      //    * The merge of multi-parent MessageContext is not properly addressed so far.
-      for (MessageContext messageContext : parent.getContexts()) {
-        if (child.getMessageContext(messageContext.getIdentifyingKey()) != null) {
-          continue;
-        }
-        if (MutableMessageContext.class.isAssignableFrom(messageContext.getClass())) {
-          MutableMessageContext mmc = (MutableMessageContext) messageContext;
-          child.addContext(mmc.createChild());
-        } else {
-          child.addContext(messageContext);
-        }
+  private static void setAcknowledgmentLink(Message<?> parent, Message<?> child) {
+    CompletableFuture<Void> newParentStagedAck = new CompletableFuture<>();
+    CompletableFuture<Void> previousParentStagedAck = parent.getAndSetStagedAck(newParentStagedAck);
+    CompletableFuture<Void> merged = CompletableFuture.allOf(newParentStagedAck, child.getMessageAck());
+    CompletableFutureUtils.propagate(merged, previousParentStagedAck);
+  }
+
+  private static void mergeMessageContexts(Message<?> parent, Message<?> child) {
+    for (MessageContext messageContext : parent.getContexts()) {
+      if (!messageContext.isPropagable()) {
+        continue;
       }
-      // }
-
-      // Setup the acknowledgement link
-      CompletableFuture<Void> newParentStagedAck = new CompletableFuture<>();
-      CompletableFuture<Void> previousParentStagedAck = parent.getAndSetStagedAck(newParentStagedAck);
-      CompletableFuture<Void> merged = CompletableFuture.allOf(newParentStagedAck, child.getMessageAck());
-      CompletableFutureUtils.propagate(merged, previousParentStagedAck);
+      MessageContext messageContextToMerge;
+      if (MutableMessageContext.class.isAssignableFrom(messageContext.getClass())) {
+        MutableMessageContext mmc = (MutableMessageContext) messageContext;
+        messageContextToMerge = mmc.createChild();
+      } else {
+        messageContextToMerge = messageContext;
+      }
+      child.mergeContext(messageContextToMerge);
     }
   }
 }

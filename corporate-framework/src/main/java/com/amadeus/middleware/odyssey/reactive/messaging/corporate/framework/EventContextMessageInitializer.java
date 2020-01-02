@@ -18,6 +18,13 @@ public class EventContextMessageInitializer {
 
   @MessageInitializer
   public void initialize(KafkaContext direcKafkaContext) {
+
+    // If there is already a kind of EventContext, then do nothing.
+    if (message.hasMergeableContext(EventContext.MERGE_KEY)) {
+      return;
+    }
+
+    // Create the EventContext from the Kafka key
     EventContext ec = new EventContextImpl();
     ec.setEventKey((String) kafkaContext.key());
     message.addContext(ec);

@@ -1,5 +1,7 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.impl;
 
+import java.lang.reflect.Method;
+
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.reactivestreams.Publisher;
 
@@ -16,6 +18,8 @@ public interface FunctionInvoker {
   }
 
   Class<?> getTargetClass();
+
+  Method getMethod();
 
   Signature getSignature();
 
