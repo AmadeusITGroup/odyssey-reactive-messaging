@@ -768,6 +768,120 @@ Here, a child message is created with a different Kafka topic target and it is s
 Here, no injection can be used.
 However, reusing an injected `Emitter` using the `Async` mechanism might be possible (to investigate).
 
+## Reactive Stream topology reshaping and instrumentation
+
+### Principles
+
+It might be wanted to reshape the declared topology that is eventually used to build the reactive stream.
+For instance, each topology node can be:
+
+* Instrumented with logs or spans before and after a message is processed;
+
+* Instrumented with performance metrics;
+
+* Etc.
+
+To do so, the idea is to follow this approach:
+
+* An actual `Topology` object is built from the annotation based declaration of the processing topology.
+
+* A Reactive Stream (or several ones) is built from a `Topology` object.
+
+* In the basic case, the `Topology` object coming from the annotated methods is directly used to build the Reactive Stream.
+
+* When it is wanted to have reshaped/instrumented version of the Reactive Stream, the `Topology` object is first
+transformed into another modified instance.
+This last modified instance is used to build the Reactive Stream.
+
+### First implementation
+
+In the current first, and limited, implementation the following pieces are used:
+
+* Declared Publisher/Processor/Subscriber can be given a name by using the `NodeName` annotation, e.g.:
+
+```java
+  @Incoming("input_channel")
+  @Outgoing("business_internal_channel1")
+  @NodeName("stage1")
+  public void stage1(String payload) {
+    ...
+  }
+```
+
+*Report to the module `business-app` in all the processor classes.*
+
+* Each Publisher/Processor/Subscriber can be added with a pre and post-processing operation by implementing the `NodeInterceptor` interface,
+and annotating methods with the `Before` and `After`, e.g.:
+
+```java
+public class LoggerNodeInterceptor implements NodeInterceptor {
+  private static final Logger logger = LoggerFactory.getLogger(LoggerNodeInterceptor.class);
+
+  private String nodeName;
+
+  @Inject
+  private Message<?> message;
+
+  @Override
+  public void setNodeName(String name) {
+    this.nodeName = name;
+  }
+
+  @Before
+  public void before() {
+    logger.info("before: {} message={}", nodeName, message);
+  }
+
+  @After
+  public void after(Message<?> message) {
+    logger.info("after: {}", nodeName);
+  }
+}
+```
+
+*Report to the module `corportate-framework` in the class `LoggerNodeInterceptor`.*
+
+A `NodeInterceptor` will be given the name of the Publisher/Processor/Subscriber node it is attached by the framework calling its `setNodeName` method.
+Then, its method annotated with `@Before` will be called before each Processor/Subscriber is called in the reactive stream.
+And, its method annotated with `@After` will be called after each Publisher/Processor is called in the reactive stream.
+
+A `NodeInterceptor` is injected (either by CDI or direct injection) in the same way a regular processor is.
+
+* An instrumented topology can be created using the `InstrumentedTopologyBuilderVisitor` from a `topology` instance,
+and a reactive stream started as follow:
+
+```java
+      Topology instrumentedTopology = InstrumentedTopologyBuilderVisitor.build("logger",
+          () -> new LoggerNodeInterceptor(), container.getBeanManager(), topology);
+
+      reactiveStreamFactory.build(instrumentedTopology);
+```
+
+*Report to the module `business-app` in the `BusinessApp` class for this code.*
+
+*Report to the module `reactive-streamm` for the `InstrumentedTopologyBuilderVisitor`.*
+
+
+This results in the following king of outcome:
+
+```
+16:23:15.707 [vert.x-eventloop-thread-0] INFO  c.a.m.o.r.m.c.f.LoggerNodeInterceptor:28 - before: stage1 message={messageContexts=[{topic='mytopic', partition='3', offset='0'}, com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaTargetImpl@f8fdcdd, {uniqueMessageId='124', key='key2'}], payload=124-value2}
+16:23:15.707 [vert.x-eventloop-thread-0] INFO  c.a.m.o.r.m.b.a.MyBusinessProcessor:19 - stage1 start
+16:23:15.707 [vert.x-eventloop-thread-0] INFO  c.a.m.o.r.m.b.a.MyBusinessProcessor:20 - stage1 payload=124-value2
+16:23:15.707 [vert.x-eventloop-thread-0] INFO  c.a.m.o.r.m.b.a.MyBusinessProcessor:21 - stage1 stop
+16:23:15.707 [vert.x-eventloop-thread-0] INFO  c.a.m.o.r.m.c.f.LoggerNodeInterceptor:33 - after: stage1
+```
+
+### Extensions
+
+An actual Topology transformation solution could be implemented.
+The topology is actually a graph, while the prototype is only implementing linear topology with simple before/after node instrumentation.
+
+A selection mechanism could be used to only instrument specific nodes according to several characteristics.
+
+`MessageInitializer` could be dropped in favor of this, with a selection mechanism that could selectively target Publishers of specific kind of messages
+(i.e. specific kind of input-connectors).
+
 ## Projects
  
 ### Structure

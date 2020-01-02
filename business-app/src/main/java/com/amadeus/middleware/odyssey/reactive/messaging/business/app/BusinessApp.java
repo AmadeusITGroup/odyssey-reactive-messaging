@@ -9,7 +9,9 @@ import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.reactive.ReactiveStreamFactory;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.InstrumentedTopologyBuilderVisitor;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
+import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.LoggerNodeInterceptor;
 
 public class BusinessApp {
   private static final Logger logger = LoggerFactory.getLogger(BusinessApp.class);
@@ -23,9 +25,14 @@ public class BusinessApp {
           .createInstance();
       Topology topology = instance.select(Topology.class)
           .get();
-      ReactiveStreamFactory factory = instance.select(ReactiveStreamFactory.class)
-          .get();
-      factory.build(topology);
+
+      ReactiveStreamFactory reactiveStreamFactory = instance.select(ReactiveStreamFactory.class)
+        .get();
+
+      Topology instrumentedTopology = InstrumentedTopologyBuilderVisitor.build("logger",
+          () -> new LoggerNodeInterceptor(), container.getBeanManager(), topology);
+
+      reactiveStreamFactory.build(instrumentedTopology);
 
       Thread.sleep(600000);
     }

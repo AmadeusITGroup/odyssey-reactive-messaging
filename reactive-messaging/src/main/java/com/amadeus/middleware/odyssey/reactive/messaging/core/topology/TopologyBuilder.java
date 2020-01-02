@@ -9,7 +9,7 @@ import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvoker;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 
 public class TopologyBuilder {
@@ -26,14 +26,26 @@ public class TopologyBuilder {
     processorNodes.add(new ProcessorNode(name, functionInvoker, inputChannels, outputChannels));
   }
 
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  public <T> void addPublisher(String name, PublisherInvoker<?> publisherInvoker, String... outputChannels) {
-    publisherNodes.add(new PublisherNode(name, publisherInvoker, outputChannels));
+  public void addProcessorNode(ProcessorNode processorNode) {
+    processorNodes.add(processorNode);
   }
 
   @SuppressWarnings({ "unchecked", "rawtypes" })
-  public <T> void addSubscriber(String name, Subscriber<T> subscriber, String... channelName) {
+  public <T> void addPublisherNode(String name, PublisherInvoker<?> publisherInvoker, String... outputChannels) {
+    publisherNodes.add(new PublisherNode(name, publisherInvoker, outputChannels));
+  }
+
+  public void addPublisherNode(PublisherNode<?> publisherNode) {
+    publisherNodes.add(publisherNode);
+  }
+
+  @SuppressWarnings({ "unchecked", "rawtypes" })
+  public <T> void addSubscriberNode(String name, Subscriber<T> subscriber, String... channelName) {
     subscriberNodes.add(new SubscriberNode(name, subscriber, channelName));
+  }
+
+  public void addSubscriberNode(SubscriberNode<?> subscriberNode) {
+    subscriberNodes.add(subscriberNode);
   }
 
   private static class ChannelBinding {

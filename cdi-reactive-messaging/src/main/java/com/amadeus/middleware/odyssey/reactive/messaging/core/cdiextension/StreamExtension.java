@@ -182,7 +182,7 @@ public class StreamExtension implements Extension {
         .map(annotation -> ((Outgoing) annotation).value());
     String[] outputChannels = os.collect(Collectors.toList())
         .toArray(new String[] {});
-    builder.addPublisher(getName(annotatedType, method), publisherInvoker, outputChannels);
+    builder.addPublisherNode(getName(annotatedType, method), publisherInvoker, outputChannels);
   }
 
   private static String getName(AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
