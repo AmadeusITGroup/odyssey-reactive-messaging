@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
 import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaTarget;
 
@@ -27,6 +28,7 @@ public class MyOutgoingProcessor {
   }
 
   @Incoming("output_channel")
+  @NodeName("output")
   public void output() {
     logger.info("output: acking the message");
 

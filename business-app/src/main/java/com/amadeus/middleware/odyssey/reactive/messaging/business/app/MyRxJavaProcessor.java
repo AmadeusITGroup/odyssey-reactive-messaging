@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
 import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaTarget;
 
 import io.reactivex.Flowable;
@@ -22,6 +23,7 @@ public class MyRxJavaProcessor {
   @SuppressWarnings("unchecked")
   @Incoming("rxin")
   @Outgoing("output_channel")
+  @NodeName("stage6")
   public Publisher<Message<String>> stage6(Publisher<Message<String>> publisher) {
     return Flowable.fromPublisher(publisher)
         .flatMap(message -> {
