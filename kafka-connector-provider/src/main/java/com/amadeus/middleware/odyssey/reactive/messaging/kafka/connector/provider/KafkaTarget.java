@@ -13,7 +13,8 @@ import io.vertx.reactivex.kafka.client.producer.KafkaHeader;
  */
 @MessageScoped
 public interface KafkaTarget extends MutableMessageContext {
-  String KEY = "MY_KAFKA_IMPLEMENTATION.KafkaTarget";
+  String KEY = "MY_KAFKATARGET";
+  String MERGE_KEY = KEY;
 
   String topic();
 

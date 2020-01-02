@@ -1,6 +1,7 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.impl;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,13 +41,11 @@ public class MessageImpl<T> implements Message<T> {
     return new ArrayList<>(messageContexts);
   }
 
-
-
   @SuppressWarnings("unchecked")
   @Override
-  public <C extends MessageContext> C getMessageContext(String key) {
+  public <C extends MessageContext> C getContext(String key) {
     for (MessageContext mc : getContexts()) {
-      if (mc.getIdentifyingKey()
+      if (mc.getContextKey()
           .equals(key)) {
         return (C) mc;
       }
@@ -55,9 +54,21 @@ public class MessageImpl<T> implements Message<T> {
   }
 
   @Override
-  public boolean contains(Class<? extends MessageContext> messageContextClass) {
-    for (MessageContext mc : messageContexts) {
-      if (messageContextClass.isAssignableFrom(mc.getClass())) {
+  public boolean hasContext(String key) {
+    for (MessageContext mc : getContexts()) {
+      if (mc.getContextKey()
+          .equals(key)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean hasMergeableContext(String key) {
+    for (MessageContext mc : getContexts()) {
+      if (mc.getContextMergeKey()
+          .equals(key)) {
         return true;
       }
     }
@@ -69,6 +80,25 @@ public class MessageImpl<T> implements Message<T> {
     if (ctx == null) {
       return;
     }
+    mergeContext(ctx);
+  }
+
+  @Override
+  public void mergeContext(MessageContext ctx) {
+    Iterator<MessageContext> it = messageContexts.iterator();
+    while (it.hasNext()) {
+      MessageContext mc = it.next();
+      if (ctx.getContextMergeKey()
+          .equals(mc.getContextMergeKey())) {
+        MessageContext merged = mc.merge(ctx);
+        if (merged != mc) {
+          it.remove();
+          messageContexts.add(merged);
+        }
+        return;
+      }
+    }
+    // no actual merge performed, let's simply add it
     messageContexts.add(ctx);
   }
 
@@ -103,9 +133,8 @@ public class MessageImpl<T> implements Message<T> {
   }
 
   /**
-   * Get for a message instance and a type the associated value.
-   *
-   * The type can be <code>Message</code>, the payload type, or a <code>MessageContext</code>.
+   * Get for a message instance and a type the associated value. The type can be <code>Message</code>, the payload type,
+   * or a <code>MessageContext</code>.
    */
   @SuppressWarnings("unchecked")
   public static <T> T get(Message message, Class<T> clazz) {
@@ -117,7 +146,7 @@ public class MessageImpl<T> implements Message<T> {
     }
     Object payload = message.getPayload();
     if ((payload != null) && (payload.getClass()
-      .isAssignableFrom(clazz))) {
+        .isAssignableFrom(clazz))) {
       return (T) payload;
     }
     if (MessageContext.class.isAssignableFrom(clazz)) {

@@ -27,11 +27,11 @@ public class MyRxJavaProcessor {
         .flatMap(message -> {
 
           Message<String> child = Message.<String> builder()
-              .fromParent(message)
+              .fromParents(message)
               .payload(message.getPayload())
               .build();
 
-          KafkaTarget target = child.getMessageContext(KafkaTarget.KEY);
+          KafkaTarget target = child.getContext(KafkaTarget.KEY);
           target.topic(target.topic() + "-child");
 
           return Flowable.fromArray(message, child);

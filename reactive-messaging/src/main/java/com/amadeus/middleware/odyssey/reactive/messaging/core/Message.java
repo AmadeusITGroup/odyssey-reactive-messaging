@@ -9,11 +9,15 @@ public interface Message<T> {
 
   Iterable<MessageContext> getContexts();
 
-  <C extends MessageContext> C getMessageContext(String key);
+  <C extends MessageContext> C getContext(String key);
 
-  boolean contains(Class<? extends MessageContext> messageContextClass);
+  boolean hasContext(String key);
+
+  boolean hasMergeableContext(String key);
 
   void addContext(MessageContext ctx);
+
+  void mergeContext(MessageContext ctx);
 
   T getPayload();
 

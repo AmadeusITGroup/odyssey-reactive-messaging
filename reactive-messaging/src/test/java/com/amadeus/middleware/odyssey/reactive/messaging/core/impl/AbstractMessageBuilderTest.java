@@ -9,7 +9,7 @@ public class AbstractMessageBuilderTest {
 
   @Test
   public void basic() {
-    Message<String> message = new MessageBuilder<String>().build();
+    Message<String> message = new TestMessageBuilder<String>().build();
     Assert.assertNotNull(message);
     Assert.assertFalse(message.getMessageAck()
         .isDone());
@@ -17,9 +17,9 @@ public class AbstractMessageBuilderTest {
 
   @Test
   public void oneParentOneChild() {
-    Message<String> parent = new MessageBuilder<String>().build();
+    Message<String> parent = new TestMessageBuilder<String>().build();
 
-    Message<String> child = new MessageBuilder<String>().fromParent(parent)
+    Message<String> child = new TestMessageBuilder<String>().fromParents(parent)
         .build();
 
     Assert.assertFalse(parent.getMessageAck()
@@ -56,11 +56,11 @@ public class AbstractMessageBuilderTest {
 
   @Test
   public void twoParentOneChild() {
-    Message<String> parent1 = new MessageBuilder<String>().build();
+    Message<String> parent1 = new TestMessageBuilder<String>().build();
 
-    Message<String> parent2 = new MessageBuilder<String>().build();
+    Message<String> parent2 = new TestMessageBuilder<String>().build();
 
-    Message<String> child = new MessageBuilder<String>().fromParent(parent1, parent2)
+    Message<String> child = new TestMessageBuilder<String>().fromParents(parent1, parent2)
         .build();
 
     Assert.assertFalse(parent1.getMessageAck()
@@ -124,10 +124,10 @@ public class AbstractMessageBuilderTest {
 
   @Test
   public void oneParentTwoChildren() {
-    Message<String> parent = new MessageBuilder<String>().build();
-    Message<String> child1 = new MessageBuilder<String>().fromParent(parent)
+    Message<String> parent = new TestMessageBuilder<String>().build();
+    Message<String> child1 = new TestMessageBuilder<String>().fromParents(parent)
         .build();
-    Message<String> child2 = new MessageBuilder<String>().fromParent(parent)
+    Message<String> child2 = new TestMessageBuilder<String>().fromParents(parent)
         .build();
 
     Assert.assertFalse(parent.getMessageAck()

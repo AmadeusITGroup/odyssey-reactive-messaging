@@ -11,7 +11,8 @@ import io.vertx.reactivex.kafka.client.producer.KafkaHeader;
 
 @MessageScoped
 public interface KafkaContext extends MessageContext {
-  String KEY = "MY_KAFKA_IMPLEMENTATION.KafkaContext";
+  String KEY = "MY_KAFKACONTEXT";
+  String MERGE_KEY = KEY;
 
   String topic();
 

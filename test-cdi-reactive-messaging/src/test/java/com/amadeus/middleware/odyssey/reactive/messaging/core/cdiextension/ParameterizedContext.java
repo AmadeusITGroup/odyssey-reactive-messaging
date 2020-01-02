@@ -6,5 +6,6 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 @MessageScoped
 public interface ParameterizedContext<T> extends MessageContext {
   String KEY = "PARAMETERIZED_CONTEXT";
+  String MERGE_KEY = KEY;
   String sayHello();
 }

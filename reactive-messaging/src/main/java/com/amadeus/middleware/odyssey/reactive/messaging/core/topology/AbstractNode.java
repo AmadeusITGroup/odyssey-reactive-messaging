@@ -12,26 +12,32 @@ public abstract class AbstractNode implements Node {
     this.name = name;
   }
 
+  @Override
   public String getName() {
     return name;
   }
 
+  @Override
   public Map<String, Node> getParents() {
     return parents;
   }
 
+  @Override
   public Map<String, Node> getChildren() {
     return children;
   }
 
+  @Override
   public void addParent(String channelName, Node parent) {
     parents.put(channelName, parent);
   }
 
+  @Override
   public void addChildren(String channelName, Node child) {
     children.put(channelName, child);
   }
 
+  @Override
   public void accept(Visitor visitor) {
     visitor.visit(this);
     visitor.beforeChildren();

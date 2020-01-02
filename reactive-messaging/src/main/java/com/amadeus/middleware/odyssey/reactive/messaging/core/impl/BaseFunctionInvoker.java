@@ -72,10 +72,17 @@ public class BaseFunctionInvoker implements FunctionInvoker {
     return Message.class.isAssignableFrom((Class<?>) ((ParameterizedType) paramType).getRawType());
   }
 
+  @Override
   public Class<?> getTargetClass() {
     return targetClass;
   }
 
+  @Override
+  public Method getMethod() {
+    return targetMethod;
+  }
+
+  @Override
   public Signature getSignature() {
     return signature;
   }

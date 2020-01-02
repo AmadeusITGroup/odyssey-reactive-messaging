@@ -31,7 +31,7 @@ public class MyOutgoingProcessor {
     logger.info("output: acking the message");
 
     // Look for a possible KafkaTarget
-    KafkaTarget kafkaTarget = message.getMessageContext(KafkaTarget.KEY);
+    KafkaTarget kafkaTarget = message.getContext(KafkaTarget.KEY);
     if (kafkaTarget != null) {
       logger.debug("If I where a Kafka connector I would send msgId={} to topic={} with key={}",
           ec.getUniqueMessageId(), kafkaTarget.topic(), kafkaTarget.key());

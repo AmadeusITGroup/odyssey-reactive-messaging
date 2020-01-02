@@ -38,7 +38,17 @@ public class EventContextImpl implements EventContext {
   }
 
   @Override
-  public String getIdentifyingKey() {
+  public boolean isPropagable() {
+    return true;
+  }
+
+  @Override
+  public String getContextKey() {
     return KEY;
+  }
+
+  @Override
+  public String getContextMergeKey() {
+    return MERGE_KEY;
   }
 }

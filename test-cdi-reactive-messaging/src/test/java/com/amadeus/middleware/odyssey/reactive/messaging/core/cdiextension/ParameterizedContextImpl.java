@@ -14,7 +14,17 @@ public class ParameterizedContextImpl<T> implements ParameterizedContext<T> {
   }
 
   @Override
-  public String getIdentifyingKey() {
-    return ParameterizedContext.KEY;
+  public boolean isPropagable() {
+    return false;
+  }
+
+  @Override
+  public String getContextKey() {
+    return KEY;
+  }
+
+  @Override
+  public String getContextMergeKey() {
+    return MERGE_KEY;
   }
 }
