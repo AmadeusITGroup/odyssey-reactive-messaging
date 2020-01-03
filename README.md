@@ -469,7 +469,7 @@ Hence, if this CDI context should be started afterward, an exception will be rai
 
 ### From n to 1 (or more...) Messages
 
-Let's considere the case where a *business processor* will issue one output message from a several input ones.
+Let's considere the case where a *business processor* will issue one output message from several input ones.
 This can be seen as a *join* case.
 
 Let's considere we have two different source connectors:
@@ -525,9 +525,9 @@ public interface MessageContext {
 ```
 
 This method will be called to merge compatible `MessageContexts`.
-For instance, a `KafkaContext` and a `MultiKafkaContext` a compatible.
+For instance, a `KafkaContext` and a `MultiKafkaContext` that are compatible.
 However, a `KafkaContext` and RabbitMQ `MessageContext` are not compatible.
-In order for a set of `MessageContext` type to indicate their compatibility, the following `getContextMergeKey` method is also exposed in `MessageContext`:
+In order for a set of `MessageContext` type to indicate their compatibility, the following `getContextMergeKey` method is also exposed by `MessageContext`:
 
 ```java
 public interface MessageContext {
@@ -550,7 +550,7 @@ The result of the merge is producing a `MultiKafkaContext` that is also returnin
 
 The `RabbitMQContext` is not merged as it returns a value not shared with other `MessageContext` for `getContextMergeKey()`.
 
-Note: Beyond child message creation, adding a `MessageContext` into a message is also resulting in calling this merge logic.
+Note: Beyond child message creation, adding a `MessageContext` into a message may also result in calling this merge logic.
 
 *One example can be found in the module `reactive-messaging` in `MessageImplTest`.*
 
