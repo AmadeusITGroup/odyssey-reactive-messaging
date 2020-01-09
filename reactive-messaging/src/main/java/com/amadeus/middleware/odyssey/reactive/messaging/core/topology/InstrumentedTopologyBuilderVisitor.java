@@ -28,14 +28,12 @@ public class InstrumentedTopologyBuilderVisitor extends AbstractVisitor {
 
   public static Topology build(String name, Supplier<NodeInterceptor> nodeInterceptorSupplier, BeanManager beanManager,
       Topology topology) {
-    for (Node node : topology.getNodes()) {
-      if (node instanceof PublisherNode) {
-        InstrumentedTopologyBuilderVisitor instrumentedTopologyBuilderVisitor = new InstrumentedTopologyBuilderVisitor(
-            name, nodeInterceptorSupplier, beanManager);
-        node.accept(instrumentedTopologyBuilderVisitor);
-        // TODO: For now, just peek the first line and return
-        return instrumentedTopologyBuilderVisitor.build();
-      }
+    for (PublisherNode node : topology.getPublisherNodes()) {
+      InstrumentedTopologyBuilderVisitor instrumentedTopologyBuilderVisitor = new InstrumentedTopologyBuilderVisitor(
+          name, nodeInterceptorSupplier, beanManager);
+      node.accept(instrumentedTopologyBuilderVisitor);
+      // TODO: For now, just peek the first line and return
+      return instrumentedTopologyBuilderVisitor.build();
     }
     return null;
   }

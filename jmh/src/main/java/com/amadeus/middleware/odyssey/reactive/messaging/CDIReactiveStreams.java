@@ -23,10 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension.CDIMessageBuilderImpl;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension.MessageScopedContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension.StreamExtension;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.CDIMessageBuilderImpl;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.MessageScopedContext;
 
 public class CDIReactiveStreams {
   private static final Logger logger = LoggerFactory.getLogger(CDIReactiveStreams.class);

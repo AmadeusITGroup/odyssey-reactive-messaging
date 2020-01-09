@@ -1,4 +1,4 @@
-package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
+package com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -59,6 +59,10 @@ public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
 
   private void callInitializers(Message<T> message) {
     MessageInitializerRegistry messageContextFactory = ReactiveMessagingContext.getMessageInitializerRegistry();
+    /* TODO: This should never be null => Remove after quarkus extension implementation */
+    if (messageContextFactory == null) {
+      return;
+    }
     try {
       messageContextFactory.initialize(message);
     } catch (FunctionInvocationException e) {

@@ -2,7 +2,7 @@ package com.amadeus.middleware.odyssey.reactive.messaging.core;
 
 import java.util.concurrent.CompletableFuture;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageBuilderProviderProvider;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.CDIMessageBuilderImpl;
 
 @MessageScoped
 public interface Message<T> {
@@ -31,6 +31,6 @@ public interface Message<T> {
 
   @SuppressWarnings("unchecked")
   static <B> MessageBuilder<B> builder() {
-    return MessageBuilderProviderProvider.create();
+    return new CDIMessageBuilderImpl();
   }
 }
