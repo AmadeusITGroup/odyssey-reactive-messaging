@@ -2,6 +2,7 @@ package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
 import javax.inject.Inject;
 
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.MessageScopedContext;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

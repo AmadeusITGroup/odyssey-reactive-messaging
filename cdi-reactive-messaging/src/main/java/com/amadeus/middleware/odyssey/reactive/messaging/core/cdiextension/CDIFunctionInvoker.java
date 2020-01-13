@@ -9,6 +9,7 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.BaseFunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.MessageScopedContext;
 
 public class CDIFunctionInvoker extends BaseFunctionInvoker {
   private static final Logger logger = LoggerFactory.getLogger(CDIFunctionInvoker.class);

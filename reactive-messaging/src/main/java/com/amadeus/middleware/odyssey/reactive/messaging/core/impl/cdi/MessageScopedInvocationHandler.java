@@ -1,4 +1,4 @@
-package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
+package com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -22,7 +22,7 @@ public class MessageScopedInvocationHandler implements InvocationHandler {
     Object object = MessageScopedContext.getInstance()
         .get(clazz);
     if (object == null) {
-      logger.error("Cannot invoke method={}, as the class={} is not the current message.", method.getName(),
+      logger.error("Cannot invoke method={}, as the class={} is not in the current message.", method.getName(),
           clazz.getSimpleName());
       throw new FunctionInvocationException("No " + clazz.getSimpleName() + " in the message");
     }

@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Node;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.PublisherNode;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
 
@@ -23,10 +22,8 @@ public class ReactiveStreamFactory {
   // Simplistic limited build logic
   public void build(Topology topology) throws FunctionInvocationException {
     Instance<Object> instance = beanManager.createInstance();
-    for (Node node : topology.getNodes()) {
-      if (node instanceof PublisherNode) {
-        node.accept(new ReactiveStreamBuilderVisitor(instance));
-      }
+    for (PublisherNode<?> node : topology.getPublisherNodes()) {
+      node.accept(new ReactiveStreamBuilderVisitor(instance));
     }
   }
 }

@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension.CDIMessageBuilderImpl;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.CDIMessageBuilderImpl;
 
 public class OnlyReactiveStreams {
   private static final Logger logger = LoggerFactory.getLogger(OnlyReactiveStreams.class);

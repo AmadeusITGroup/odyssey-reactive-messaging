@@ -14,7 +14,7 @@
     <name>Reactive Messaging DI extension - Parent</name>
 
     <properties>
-        <quarkus.version>1.0.0.Final</quarkus.version>
+        <quarkus.version>1.1.1.Final</quarkus.version>
     </properties>
 
     <packaging>pom</packaging>

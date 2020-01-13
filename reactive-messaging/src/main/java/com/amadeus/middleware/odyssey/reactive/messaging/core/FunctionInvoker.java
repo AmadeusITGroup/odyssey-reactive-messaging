@@ -41,7 +41,6 @@ public interface FunctionInvoker {
    */
   Object invoke(Message<?> message) throws FunctionInvocationException;
 
-
   Publisher<Message<?>> invoke(Object targetInstance, PublisherBuilder<Message<?>> publisherBuilder)
       throws FunctionInvocationException;
 

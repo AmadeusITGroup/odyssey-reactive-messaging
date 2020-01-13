@@ -47,10 +47,8 @@ class ReactiveStreamBuilderVisitor extends AbstractVisitor {
 
   private void build(PublisherNode publisherNode) {
     PublisherInvoker<?> publisherInvoker = publisherNode.getPublisherInvoker();
-    Object targetPublisherInstance = instance.select(publisherInvoker.getTargetClass())
-        .get();
     try {
-      Publisher<? extends Message<?>> publisher = publisherInvoker.invoke(targetPublisherInstance);
+      Publisher<? extends Message<?>> publisher = publisherInvoker.invoke();
       publisherBuilder = ReactiveStreams.fromPublisher(publisher);
     } catch (FunctionInvocationException e) {
       logger.error("Failure", e);

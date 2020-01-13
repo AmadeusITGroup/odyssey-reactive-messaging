@@ -1,4 +1,4 @@
-package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
+package com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi;
 
 import java.lang.reflect.Proxy;
 import java.util.function.Function;
@@ -15,6 +15,7 @@ public class ProxyProducer<T> implements Function<CreationalContext<T>, T> {
   @SuppressWarnings("unchecked")
   @Override
   public T apply(CreationalContext<T> creationalContext) {
-    return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz }, new MessageScopedInvocationHandler(clazz));
+    return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz },
+        new MessageScopedInvocationHandler(clazz));
   }
 }

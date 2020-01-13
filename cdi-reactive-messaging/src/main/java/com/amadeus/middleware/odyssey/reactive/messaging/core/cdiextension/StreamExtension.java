@@ -40,8 +40,9 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageInitializer;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvokerImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.ProxyProducer;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyBuilder;
 
@@ -176,7 +177,8 @@ public class StreamExtension implements Extension {
   }
 
   private void processFlowingPublisher(AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
-    PublisherInvoker<?> publisherInvoker = new PublisherInvoker<>(annotatedType.getJavaClass(), method.getJavaMember());
+    PublisherInvokerImpl<?> publisherInvoker = new PublisherInvokerImpl<>(annotatedType.getJavaClass(),
+        method.getJavaMember());
     Stream<String> os = method.getAnnotations(Outgoing.class)
         .stream()
         .map(annotation -> ((Outgoing) annotation).value());
@@ -277,8 +279,11 @@ public class StreamExtension implements Extension {
     Instance<Object> instance = beanManager.createInstance();
 
     // Build the topology
-    builder.build(instance.select(Topology.class)
-        .get());
+    Topology topology = instance.select(Topology.class)
+        .get();
+    builder.build(topology);
+    FunctionInvokerInitializer functionInvokerInitializer = new FunctionInvokerInitializer(beanManager);
+    topology.accept(functionInvokerInitializer);
     builder = null;
 
     logger.info("StreamExtension initialized");
