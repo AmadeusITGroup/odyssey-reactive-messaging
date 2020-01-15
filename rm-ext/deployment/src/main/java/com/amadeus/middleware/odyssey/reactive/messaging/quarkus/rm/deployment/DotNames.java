@@ -1,12 +1,14 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.deployment;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.jandex.DotName;
 
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageInitializer;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
 
 public final class DotNames {
@@ -20,4 +22,6 @@ public final class DotNames {
   static final DotName MESSAGE = DotName.createSimple(Message.class.getName());
   static final DotName MESSAGE_CONTEXT = DotName.createSimple(MessageContext.class.getName());
   static final DotName MESSAGE_SCOPED = DotName.createSimple(MessageScoped.class.getName());
+  static final DotName ASYNC = DotName.createSimple(Async.class.getName());
+  static final DotName MESSAGE_INITIALIZER = DotName.createSimple(MessageInitializer.class.getName());
 }

@@ -622,7 +622,7 @@ For instance, Resteasy is:
 
 #### `ext-rm` Quarkus implementation
 
-*This has not been implemented so far.*
+It is in the `rm-ext` module and enable to use the same API either in bytecode or native mode.
 
 ## Dependency injection drawbacks & benefits
 
@@ -904,6 +904,10 @@ prototype API.
 `business-app`: This is an example of a business application using the framework.
 
 `jmh`: First basic jmh performance tests to get an idea of the CDI implementation impact.
+
+`rm-ext`: Quarkus extension to implement the framework.
+
+`quarkus-app`: Quarkus application similar to `business-app` but for Quarkus (both might be merged one day).
 
 ### How to build & run
 

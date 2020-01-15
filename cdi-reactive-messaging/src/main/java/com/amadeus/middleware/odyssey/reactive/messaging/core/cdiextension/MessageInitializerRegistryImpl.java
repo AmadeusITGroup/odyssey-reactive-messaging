@@ -50,7 +50,6 @@ public class MessageInitializerRegistryImpl implements MessageInitializerRegistr
     }
   }
 
-  @Override
   public void add(Class<?> factoryClass, Method builder) {
     invokationTargets.add(new InvokationTarget(factoryClass, builder));
   }

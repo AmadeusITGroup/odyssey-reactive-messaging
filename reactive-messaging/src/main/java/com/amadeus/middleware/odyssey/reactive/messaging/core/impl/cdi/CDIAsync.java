@@ -1,4 +1,4 @@
-package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
+package com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.MessageScopedContext;

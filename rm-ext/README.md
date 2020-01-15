@@ -1,13 +1,10 @@
 # Reactive Extension for Quarkus
 
-This is a very first tentative implementation:
+This is a very first implementation:
 
-* `Message` and `MessageContext` injection work either using regular Quarkus DI or direct injection, including in native mode.
-
-* Async<X> are not supported for now.
+* The full API is supported.
 
 * Few testing so far.
-
 
 It can be installed locally:
 

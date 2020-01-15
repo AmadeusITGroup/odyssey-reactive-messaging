@@ -14,9 +14,11 @@ import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.jboss.logging.Logger;
 import org.reactivestreams.Publisher;
 
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Invoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.DirectAsync;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.MessageScopedContext;
@@ -30,6 +32,7 @@ public class QuarkusFunctionInvoker implements FunctionInvoker {
   private String methodName;
 
   private Type[] parameterTypes;
+  private Type[] asyncParameterTypes;
   private Signature signature;
   private Class<?> targetClass;
   private Object targetInstance;
@@ -114,33 +117,38 @@ public class QuarkusFunctionInvoker implements FunctionInvoker {
 
   @Override
   public Object invoke(Message<?> message) throws FunctionInvocationException {
-
     MessageImpl<?> messageImpl = (MessageImpl<?>) message;
     MessageScopedContext context = MessageScopedContext.getInstance();
-    context.start(messageImpl.getScopeContextId());
+    boolean alreadyActive = context.isActive();
+    if (!alreadyActive) {
+      context.start(messageImpl.getScopeContextId());
+    }
     try {
       return invoker.invoke(buildParameters(message));
     } catch (Exception e) {
       throw new FunctionInvocationException(e);
     } finally {
-      context.suspend();
+      if (!alreadyActive) {
+        context.suspend();
+      }
     }
   }
 
   private Object[] buildParameters(Message<?> message) {
     List<Object> parameters = new ArrayList<>();
+    int asyncIndex = 0;
     for (Type paramType : parameterTypes) {
+
+      Class<?> clazz = (Class<?>) paramType;
+
       // Special handling of Async as it is a parameterized type
-      /*
-       * if (Async.class.isAssignableFrom(param.getType())) { ParameterizedType type = (ParameterizedType)
-       * param.getParameterizedType(); Type parameterType = type.getActualTypeArguments()[0]; if
-       * (ParameterizedType.class.isAssignableFrom(parameterType.getClass())) { parameterType = ((ParameterizedType)
-       * parameterType).getRawType(); } Class<?> clazz = (Class<?>) parameterType; parameters.add(new
-       * DirectAsync<>(MessageImpl.get(message, clazz))); continue; }
-       */
+      if (Async.class.isAssignableFrom(clazz)) {
+        parameters.add(new DirectAsync<>(MessageImpl.get(message, (Class<?>) asyncParameterTypes[asyncIndex])));
+        asyncIndex++;
+        continue;
+      }
 
       // Message Scoped object
-      Class<?> clazz = (Class<?>) paramType;
       Object object = MessageImpl.get(message, clazz);
       if (object != null) {
         parameters.add(object);
@@ -192,5 +200,13 @@ public class QuarkusFunctionInvoker implements FunctionInvoker {
         return;
       }
     }
+  }
+
+  public Type[] getAsyncParameterTypes() {
+    return asyncParameterTypes;
+  }
+
+  public void setAsyncParameterTypes(Type[] asyncParameterTypes) {
+    this.asyncParameterTypes = asyncParameterTypes;
   }
 }
