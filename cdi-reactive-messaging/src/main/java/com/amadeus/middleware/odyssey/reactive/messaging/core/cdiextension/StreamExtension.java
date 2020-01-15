@@ -42,6 +42,7 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvokerImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.CDIAsync;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.ProxyProducer;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyBuilder;

@@ -29,7 +29,19 @@ public class Processors {
   private Message message2;
 
   @Inject
+  private Async<Message> asyncMessage;
+
+  @Inject
+  private Async<Message<String>> asyncStringMessage;
+
+  @Inject
   TestMessageContext testMessageContext;
+
+  @Inject
+  Async<TestMessageContext> gtestMessageContextAsync;
+
+  @Inject
+  MyMessageInitializer myMessageInitializer; // to not be removed...
 
   @Inject
   public Processors(Message<String> message) {
@@ -67,21 +79,27 @@ public class Processors {
   @Incoming("incoming")
   @Outgoing("outgoing")
   @NodeName("processor1")
-  public void processor1(Async<Message> async, Message<String> msg) {
+  public void processor1(Async<Message> dasync, Message<String> msg) {
     logger.infof("processor1 %s", msg);
     logger.infof("processor1 %s", message);
+    Message damessage = dasync.get();
+    logger.infof("processor1 %s", damessage);
+    Message amsg = asyncStringMessage.get();
+    logger.infof("processor1 %s", amsg);
   }
 
   @Incoming("outgoing")
   @Outgoing("terminal")
-  public void processor2(String msg) {
+  public void processor2(Async<TestMessageContext> testMessageContextAsync, String msg) {
     logger.infof("processor2 %s", msg);
-    logger.infof("testMessageContext %s", testMessageContext);
+    logger.infof("processor2 testMessageContext %s", testMessageContext);
+    logger.infof("processor2 testMessageContext %s", testMessageContextAsync.get());
+    logger.infof("processor2 testMessageContext %s", gtestMessageContextAsync.get());
   }
 
   @Incoming("terminal")
-  public void terminalProcessor(Async<Message> async, Message<String> msg) {
-    logger.infof("outGoingProcessor %s", msg);
+  public void terminalProcessor(Async<Message> async, Message<String> msg, String payload) {
+    logger.infof("outGoingProcessor %s payload=%s", msg, payload);
   }
 
 }

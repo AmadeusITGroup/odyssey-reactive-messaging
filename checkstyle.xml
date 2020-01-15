@@ -21,5 +21,6 @@
             <property name="separateLineBetweenGroups"
                 value="true" />
         </module>
+        <module name="UnusedImports"/>
     </module>
 </module>

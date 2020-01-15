@@ -14,6 +14,9 @@ import org.jboss.jandex.Type;
 
 import java.lang.reflect.Modifier;
 
+// A lot of code is taken from:
+// https://github.com/quarkusio/quarkus/blob/master/extensions/smallrye-reactive-messaging/deployment/src/main/java/io/quarkus/smallrye/reactivemessaging/deployment/QuarkusMediatorConfigurationUtil.java
+
 public class RmExtProcessorHelpers {
   static final String INVOKER_SUFFIX = "_OdysseyInvoker";
 

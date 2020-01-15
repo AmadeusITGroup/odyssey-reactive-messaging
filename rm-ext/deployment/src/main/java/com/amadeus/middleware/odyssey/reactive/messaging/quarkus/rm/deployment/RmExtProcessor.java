@@ -11,10 +11,13 @@ import java.util.Set;
 
 import javax.enterprise.context.spi.CreationalContext;
 
+import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
+import org.eclipse.collections.impl.multimap.set.UnifiedSetMultimap;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -27,9 +30,12 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Processor
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.PublisherNode;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyBuilder;
+import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.AsyncCreator;
+import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.AsyncCreatorImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MessageContextCreator;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MessageContextCreatorImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MessageCreator;
+import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MessageInitializerRecorder;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.QuarkusFunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.QuarkusPublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.TopologyInitializerRecorder;
@@ -63,8 +69,6 @@ public class RmExtProcessor {
 
   private static final String FEATURE = "rm-ext";
 
-  static final String INVOKER_SUFFIX = "_SmallryeMessagingInvoker";
-
   @BuildStep
   public FeatureBuildItem feature() {
     return new FeatureBuildItem(FEATURE);
@@ -87,13 +91,13 @@ public class RmExtProcessor {
       public void register(RegistrationContext registrationContext) {
         registerMessageSyntheticTypes(registrationContext);
         registerMessageContextSyntheticTypes(registrationContext, messageContextBuildItems);
+        registerAsyncSyntheticTypes(registrationContext);
       }
     });
   }
 
   void registerMessageContextSyntheticTypes(BeanRegistrar.RegistrationContext registrationContext,
       List<MessageContextBuildItem> messageContextBuildItems) {
-
     for (MessageContextBuildItem messageContextBuildItem : messageContextBuildItems) {
       Class<?> clazz = messageContextBuildItem.getClazz();
       registrationContext.configure(clazz)
@@ -113,7 +117,6 @@ public class RmExtProcessor {
   }
 
   void registerMessageSyntheticTypes(BeanRegistrar.RegistrationContext registrationContext) {
-
     Set<Type> messageTypes = new HashSet<>();
     for (InjectionPointInfo injectionPoint : registrationContext.get(BuildExtension.Key.INJECTION_POINTS)) {
       Type type = injectionPoint.getRequiredType();
@@ -127,7 +130,55 @@ public class RmExtProcessor {
         .types(mt)
         .creator(MessageCreator.class)
         .done();
+  }
 
+  private void registerAsyncSyntheticTypes(BeanRegistrar.RegistrationContext registrationContext) {
+    MutableSetMultimap<Type, Type> baseToFullyParameterizedTypes = UnifiedSetMultimap.newMultimap();
+    for (InjectionPointInfo injectionPoint : registrationContext.get(BuildExtension.Key.INJECTION_POINTS)) {
+      Type type = injectionPoint.getRequiredType();
+      if (!type.name()
+          .equals(DotNames.ASYNC)) {
+        continue;
+      }
+      if (type.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+        logger.errorf("Cannot inject type %s", type.toString());
+        continue;
+      }
+      ParameterizedType keyType = type.asParameterizedType();
+      // if Async<X<Y>> then convert to Async<X>
+      Type ptype = keyType.arguments()
+          .get(0);
+      if (ptype.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+        ptype = Type.create(ptype.name(), Type.Kind.CLASS);
+        keyType = ParameterizedType.create(keyType.name(), new Type[] { ptype }, null);
+      }
+      baseToFullyParameterizedTypes.put(keyType, type);
+    }
+
+    for (Type key : baseToFullyParameterizedTypes.keySet()) {
+      Type[] mt = baseToFullyParameterizedTypes.get(key)
+          .toArray(new Type[] {});
+
+      Class clazz = RmExtProcessorHelpers.load(key.asParameterizedType()
+          .arguments()
+          .get(0)
+          .toString(),
+          Thread.currentThread()
+              .getContextClassLoader());
+
+      String className = clazz.getName();
+      registrationContext.configure(key.name())
+          .types(mt)
+          .creator(mc -> {
+            ResultHandle creatorHandle = mc.newInstance(MethodDescriptor.ofConstructor(AsyncCreatorImpl.class));
+            ResultHandle[] params = { mc.load(className) };
+            ResultHandle ret = mc.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(AsyncCreator.class, "create", Object.class, String.class), creatorHandle,
+                params);
+            mc.returnValue(ret);
+          })
+          .done();
+    }
   }
 
   @BuildStep
@@ -147,12 +198,33 @@ public class RmExtProcessor {
         AnnotationInstance incoming = annotationStore.getAnnotation(methodInfo, DotNames.INCOMING);
         AnnotationInstance outgoing = annotationStore.getAnnotation(methodInfo, DotNames.OUTGOING);
         if ((incoming != null) || (outgoing != null)) {
+          logger.debugf("node %s.%s", beanInfo.toString(), methodInfo.toString());
           nodeBuildItemBuildProducer.produce(new NodeBuildItem(beanInfo, methodInfo));
-          // processFlowingMethod(builder, bean, methodInfo, incoming, outgoing, annotationStore);
         }
       }
     }
-    // topologyBuilderBuildItemProducer.produce(new TopologyBuilderBuildItem(builder));
+  }
+
+  @BuildStep
+  public void lookupMessageInitializer(ValidationPhaseBuildItem validationPhase,
+      BuildProducer<MessageInitializerBuildItem> messageInitializerBuildItemBuildProducer) {
+    for (BeanInfo beanInfo : validationPhase.getContext()
+        .beans()
+        .classBeans()) {
+      for (MethodInfo methodInfo : beanInfo.getTarget()
+          .get()
+          .asClass()
+          .methods()) {
+        AnnotationStore annotationStore = validationPhase.getContext()
+            .get(BuildExtension.Key.ANNOTATION_STORE);
+        AnnotationInstance messageInitializerAnnotation = annotationStore.getAnnotation(methodInfo,
+            DotNames.MESSAGE_INITIALIZER);
+        if (messageInitializerAnnotation != null) {
+          logger.debugf("messageinitializer %s.%s", beanInfo.toString(), methodInfo.toString());
+          messageInitializerBuildItemBuildProducer.produce(new MessageInitializerBuildItem(beanInfo, methodInfo));
+        }
+      }
+    }
   }
 
   @BuildStep
@@ -172,13 +244,12 @@ public class RmExtProcessor {
           Thread.currentThread()
               .getContextClassLoader());
       if (MessageContext.class.isAssignableFrom(clazz)) {
-        logger.infof("Found declaration of MessageContext " + annotationInstance.name());
+        logger.infof("Found declaration of MessageContext " + clazz.getName());
         messageContextBuildItemBuildProducer.produce(new MessageContextBuildItem(clazz));
         nativeImageProxyDefinitionBuildItemBuildProducer
             .produce(new NativeImageProxyDefinitionBuildItem(clazz.getName()));
       }
     }
-
   }
 
   private Node processFlowingMethod(TopologyBuilder builder, BeanInfo bean, MethodInfo method) {
@@ -251,15 +322,38 @@ public class RmExtProcessor {
 
   @BuildStep(loadsApplicationClasses = true)
   @Record(STATIC_INIT)
-  public void build(TopologyInitializerRecorder topologyInitializerRecorder, RecorderContext recorderContext,
+  public void build(TopologyInitializerRecorder topologyInitializerRecorder,
+      MessageInitializerRecorder messageInitializerRecorder, RecorderContext recorderContext,
       BuildProducer<ReflectiveClassBuildItem> reflectiveClass, BuildProducer<GeneratedClassBuildItem> generatedClass,
-      List<NodeBuildItem> nodeBuildItems, BeanContainerBuildItem beanContainer) {
-    logger.info("build");
+      List<NodeBuildItem> nodeBuildItems, List<MessageInitializerBuildItem> messageInitializerBuildItems,
+      List<MessageContextBuildItem> messageContextBuildItems, BeanContainerBuildItem beanContainer) {
+    logger.info("build static init {");
+
+    // This will enable QuarkusAsync to perform class loading
+    for (MessageContextBuildItem messageContextBuildItem : messageContextBuildItems) {
+      reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, messageContextBuildItem.getClazz()));
+    }
 
     ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
-    TopologyBuilder builder = new TopologyBuilder();
+    // Handle message initializer first
+    {
+      List<QuarkusFunctionInvoker> mii = new ArrayList<>();
+      for (MessageInitializerBuildItem mib : messageInitializerBuildItems) {
+        BeanInfo beanInfo = mib.getBean();
+        MethodInfo methodInfo = mib.getMethod();
+        QuarkusFunctionInvoker functionInvoker = new QuarkusFunctionInvoker();
+        functionInvoker.setBeanId(beanInfo.getIdentifier());
+        functionInvoker.setMethodName(methodInfo.name());
+        functionInvoker.setSignature(FunctionInvoker.Signature.DIRECT);
+        setupFunctionInvoker(recorderContext, reflectiveClass, classOutput, beanInfo, methodInfo, functionInvoker);
+        mii.add(functionInvoker);
+      }
+      messageInitializerRecorder.initialize(mii);
+    }
 
+    // Handle the topology
+    TopologyBuilder builder = new TopologyBuilder();
     for (NodeBuildItem nodeBuildItem : nodeBuildItems) {
       BeanInfo bean = nodeBuildItem.getBean();
       MethodInfo methodInfo = nodeBuildItem.getMethod();
@@ -270,9 +364,8 @@ public class RmExtProcessor {
         processProcessorNode(recorderContext, reflectiveClass, classOutput, bean, methodInfo, (ProcessorNode) node);
       }
     }
-
     topologyInitializerRecorder.initialize(beanContainer.getValue(), builder);
-    logger.info("build");
+    logger.info("} build build static init");
   }
 
   @SuppressWarnings("unchecked")
@@ -284,6 +377,12 @@ public class RmExtProcessor {
         .getContextClassLoader();
 
     QuarkusFunctionInvoker functionInvoker = (QuarkusFunctionInvoker) processorNode.getFunctionInvoker();
+    setupFunctionInvoker(recorderContext, reflectiveClass, classOutput, bean, methodInfo, functionInvoker);
+  }
+
+  private void setupFunctionInvoker(RecorderContext recorderContext,
+      BuildProducer<ReflectiveClassBuildItem> reflectiveClass, ClassOutput classOutput, BeanInfo bean,
+      MethodInfo methodInfo, QuarkusFunctionInvoker functionInvoker) {
     String generatedInvokerName = RmExtProcessorHelpers.generateInvoker(bean, methodInfo, classOutput);
     reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
 
@@ -296,15 +395,23 @@ public class RmExtProcessor {
 
     java.lang.reflect.Type[] parameterTypes = new java.lang.reflect.Type[methodInfo.parameters()
         .size()];
+    List<java.lang.reflect.Type> asyncParameterTypes = new ArrayList<>();
     for (int i = 0; i < methodInfo.parameters()
         .size(); i++) {
       Type type = methodInfo.parameters()
           .get(i);
       parameterTypes[i] = recorderContext.classProxy(type.name()
           .toString());
+      if (type.name()
+          .equals(DotNames.ASYNC)) {
+        asyncParameterTypes.add(recorderContext.classProxy(type.asParameterizedType()
+            .arguments()
+            .get(0)
+            .toString()));
+      }
     }
     functionInvoker.setParameterTypes(parameterTypes);
-
+    functionInvoker.setAsyncParameterTypes(asyncParameterTypes.toArray(new java.lang.reflect.Type[] {}));
     functionInvoker.setInvokerClass((Class<? extends Invoker>) recorderContext.classProxy(generatedInvokerName));
   }
 

@@ -3,6 +3,8 @@ package com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provid
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -15,14 +17,15 @@ import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumer;
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumerRecord;
 
+@ApplicationScoped
 public class KafkaRecordPublisher {
   private static final Logger logger = LoggerFactory.getLogger(KafkaRecordPublisher.class);
-
-  private Vertx vertx = Vertx.vertx();
 
   @Outgoing("input_channel")
   @NodeName("KafkaPublisher")
   public Publisher<Message<String>> publish() {
+    Vertx vertx = Vertx.vertx();
+
     Map<String, String> config = new HashMap<>();
     config.put("bootstrap.servers", "127.0.0.1:9092");
     config.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");

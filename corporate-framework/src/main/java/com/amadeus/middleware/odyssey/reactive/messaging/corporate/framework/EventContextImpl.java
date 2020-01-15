@@ -29,7 +29,7 @@ public class EventContextImpl implements EventContext {
 
   @Override
   public String toString() {
-    return "{" + "uniqueMessageId='" + uniqueMessageId + '\'' + ", key='" + eventKey + '\'' + '}';
+    return "EventContext{" + "uniqueMessageId='" + uniqueMessageId + '\'' + ", key='" + eventKey + '\'' + '}';
   }
 
   @Override

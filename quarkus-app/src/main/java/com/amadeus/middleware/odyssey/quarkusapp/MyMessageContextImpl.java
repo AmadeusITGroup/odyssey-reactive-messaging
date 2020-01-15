@@ -16,7 +16,7 @@ public class MyMessageContextImpl implements MyMessageContext {
 
   @Override
   public String getContextKey() {
-    return "MMC";
+    return KEY;
   }
 
   @Override
@@ -26,7 +26,7 @@ public class MyMessageContextImpl implements MyMessageContext {
 
   @Override
   public String getContextMergeKey() {
-    return null;
+    return KEY;
   }
 
   @Override

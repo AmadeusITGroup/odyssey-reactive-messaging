@@ -61,6 +61,7 @@ public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
     MessageInitializerRegistry messageContextFactory = ReactiveMessagingContext.getMessageInitializerRegistry();
     /* TODO: This should never be null => Remove after quarkus extension implementation */
     if (messageContextFactory == null) {
+      logger.error("Null messageContextFactory");
       return;
     }
     try {
