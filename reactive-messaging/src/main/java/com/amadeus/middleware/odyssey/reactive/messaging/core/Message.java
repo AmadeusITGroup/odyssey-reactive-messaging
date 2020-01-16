@@ -7,17 +7,17 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.CDIMessag
 @MessageScoped
 public interface Message<T> {
 
-  Iterable<MessageContext> getContexts();
+  Iterable<Metadata> getMetadata();
 
-  <C extends MessageContext> C getContext(String key);
+  <C extends Metadata> C getMetadata(String key);
 
-  boolean hasContext(String key);
+  boolean hasMetadata(String key);
 
-  boolean hasMergeableContext(String key);
+  boolean hasMergeableMetadata(String key);
 
-  void addContext(MessageContext ctx);
+  void addMetadata(Metadata ctx);
 
-  void mergeContext(MessageContext ctx);
+  void mergeMetadata(Metadata ctx);
 
   T getPayload();
 

@@ -1,11 +1,11 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
 
 @MessageScoped
-public interface EventContext extends MessageContext {
-  String KEY = "MY_EVENTCONTEXT";
+public interface EventMetadata extends Metadata {
+  String KEY = "MY_EVENT_METADATA";
   String MERGE_KEY = KEY;
 
   String getUniqueMessageId();

@@ -15,8 +15,8 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.reactive.ReactiveStreamFactory;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
-import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventContext;
-import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventContextMessageInitializer;
+import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventMetadata;
+import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventMetadataMessageInitializer;
 import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaRecordPublisher;
 
 import io.quarkus.runtime.StartupEvent;
@@ -29,7 +29,7 @@ public class Processor {
   KafkaRecordPublisher kafkaRecordPublisher; // just to not have it discarded by arc
 
   @Inject
-  EventContextMessageInitializer eventContextMessageInitializer; // just to not have it discarded by arc
+  EventMetadataMessageInitializer eventMetadataMessageInitializer; // just to not have it discarded by arc
 
   @Inject
   private Topology topology;
@@ -38,10 +38,10 @@ public class Processor {
   private ReactiveStreamFactory reactiveStreamFactory;
 
   @Inject
-  MyMessageContext myMessageContext;
+  MyMetadata myMetadata;
 
   @Inject
-  Async<MyMessageContext> gmyMessageContextAsync;
+  Async<MyMetadata> gmyMetadataAsync;
 
   @Inject
   Message message;
@@ -49,7 +49,7 @@ public class Processor {
   @Incoming("input_channel")
   @Outgoing("outgoing")
   @NodeName("processor1")
-  public void processor1(Async<Message> async, MyMessageContext mmc, Message<String> msg, EventContext ec) {
+  public void processor1(Async<Message> async, MyMetadata mmc, Message<String> msg, EventMetadata ec) {
     logger.infof("processor1 %s", msg);
     logger.infof("processor1 arc injected %s", message);
     logger.infof("processor1 async arc injected %s", async.get());
@@ -59,11 +59,11 @@ public class Processor {
 
   @Incoming("outgoing")
   @Outgoing("terminal")
-  public void processor2(Async<MyMessageContext> myMessageContextAsync, String msg) {
+  public void processor2(Async<MyMetadata> myMetadataAsync, String msg) {
     logger.infof("processor2 %s", msg);
-    logger.infof("processor2 myMessageContext %s", myMessageContext);
-    logger.infof("processor2 myMessageContextAsync %s", myMessageContextAsync.get());
-    logger.infof("processor2 gmyMessageContextAsync %s", gmyMessageContextAsync.get());
+    logger.infof("processor2 myMetadata %s", myMetadata);
+    logger.infof("processor2 myMetadataAsync %s", myMetadataAsync.get());
+    logger.infof("processor2 gmyMetadataAsync %s", gmyMetadataAsync.get());
   }
 
   @Incoming("terminal")

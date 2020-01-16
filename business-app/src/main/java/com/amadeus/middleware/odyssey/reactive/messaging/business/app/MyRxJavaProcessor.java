@@ -33,7 +33,7 @@ public class MyRxJavaProcessor {
               .payload(message.getPayload())
               .build();
 
-          KafkaTarget target = child.getContext(KafkaTarget.KEY);
+          KafkaTarget target = child.getMetadata(KafkaTarget.KEY);
           target.topic(target.topic() + "-child");
 
           return Flowable.fromArray(message, child);

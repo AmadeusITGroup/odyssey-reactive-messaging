@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
-import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventMetadata;
 
 public class MyBusinessProcessor {
   private static final Logger logger = LoggerFactory.getLogger(MyBusinessProcessor.class);
@@ -33,7 +33,7 @@ public class MyBusinessProcessor {
   @Incoming("business_internal_channel2")
   @Outgoing("internal_channel")
   @NodeName("stage3")
-  public void stage3(EventContext ec, String payload) {
+  public void stage3(EventMetadata ec, String payload) {
     logger.info("stage3 start");
     logger.info("stage3 event id={} payload={}", ec.getUniqueMessageId(), payload);
     logger.info("stage3 stop");

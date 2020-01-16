@@ -17,8 +17,8 @@ public class KafkaMessageInitializer {
   @MessageInitializer
   public void initialize() {
 
-    // If the MessageContext is already present, then do nothing.
-    if (message.hasMergeableContext(KafkaContext.MERGE_KEY)) {
+    // If the Metadata is already present, then do nothing.
+    if (message.hasMergeableMetadata(KafkaIncoming.MERGE_KEY)) {
       return;
     }
 
@@ -28,10 +28,10 @@ public class KafkaMessageInitializer {
       return;
     }
 
-    // Create the KafkaContext and set the value with the KafkaPayload
+    // Create the KafkaIncoming and set the value with the KafkaPayload
     KafkaConsumerRecord<String, String> kcr = (KafkaConsumerRecord<String, String>) message.getPayload();
-    KafkaContextImpl ki = new KafkaContextImpl(kcr);
-    message.addContext(ki);
+    KafkaIncomingImpl ki = new KafkaIncomingImpl(kcr);
+    message.addMetadata(ki);
     message.setPayload(kcr.value());
   }
 }

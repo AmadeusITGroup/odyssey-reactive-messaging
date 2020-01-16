@@ -44,31 +44,31 @@ public class KafkaRecordPublisher {
   }
 
   private static Message<String> buildMessage(KafkaConsumerRecord<String, String> record) {
-    KafkaContext kafkaContext = new KafkaContextImpl(record);
+    KafkaIncoming kafkaIncoming = new KafkaIncomingImpl(record);
 
-    KafkaTarget kafkaTarget = new KafkaTargetImpl(null, null, kafkaContext.headers());
+    KafkaTarget kafkaTarget = new KafkaTargetImpl(null, null, kafkaIncoming.headers());
 
     Message<String> msg = Message.<String> builder()
-        .addContext(kafkaContext)
-        .addContext(kafkaTarget)
+        .addMetadata(kafkaIncoming)
+        .addMetadata(kafkaTarget)
         .payload(record.value())
         .build();
 
     msg.getMessageAck()
-        .whenComplete((v, t) -> handleCompletion(kafkaContext, t));
+        .whenComplete((v, t) -> handleCompletion(kafkaIncoming, t));
 
     return msg;
   }
 
-  private static void handleCompletion(KafkaContext kafkaContext, Throwable t) {
+  private static void handleCompletion(KafkaIncoming kafkaIncoming, Throwable t) {
     if (t != null) {
-      logger.warn("Kafka Message exceptionally completed topic={} partition={} offset={}", kafkaContext.topic(),
-          kafkaContext.partition(), kafkaContext.offset());
+      logger.warn("Kafka Message exceptionally completed topic={} partition={} offset={}", kafkaIncoming.topic(),
+          kafkaIncoming.partition(), kafkaIncoming.offset());
       // Call the error handling mechanism...
       return;
     }
-    logger.debug("Kafka Message completed topic={} partition={} offset={}", kafkaContext.topic(),
-        kafkaContext.partition(), kafkaContext.offset());
+    logger.debug("Kafka Message completed topic={} partition={} offset={}", kafkaIncoming.topic(),
+        kafkaIncoming.partition(), kafkaIncoming.offset());
     // Here, the commit logic could be triggered
   }
 }

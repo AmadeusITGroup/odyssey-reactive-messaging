@@ -20,7 +20,7 @@ public class CDIMessageBuilderImpl<T> extends AbstractMessageBuilder<T> {
 
   @Override
   public Message<T> build() {
-    MessageImpl<T> message = new MessageImpl<T>(contexts, payload);
+    MessageImpl<T> message = new MessageImpl<T>(metadata, payload);
 
     AbstractMessageBuilder.setupParentChildLink(parents, message);
 

@@ -24,7 +24,7 @@ import org.jboss.logging.Logger;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Invoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Node;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.ProcessorNode;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.PublisherNode;
@@ -32,8 +32,8 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyBuilder;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.AsyncCreator;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.AsyncCreatorImpl;
-import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MessageContextCreator;
-import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MessageContextCreatorImpl;
+import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MetadataCreator;
+import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MetadataCreatorImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MessageCreator;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MessageInitializerRecorder;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.QuarkusFunctionInvoker;
@@ -85,20 +85,20 @@ public class RmExtProcessor {
   }
 
   @BuildStep
-  BeanRegistrarBuildItem syntheticBean(List<MessageContextBuildItem> messageContextBuildItems) {
+  BeanRegistrarBuildItem syntheticBean(List<MetadataBuildItem> messageContextBuildItems) {
     return new BeanRegistrarBuildItem(new BeanRegistrar() {
       @Override
       public void register(RegistrationContext registrationContext) {
         registerMessageSyntheticTypes(registrationContext);
-        registerMessageContextSyntheticTypes(registrationContext, messageContextBuildItems);
+        registerMetadataSyntheticTypes(registrationContext, messageContextBuildItems);
         registerAsyncSyntheticTypes(registrationContext);
       }
     });
   }
 
-  void registerMessageContextSyntheticTypes(BeanRegistrar.RegistrationContext registrationContext,
-      List<MessageContextBuildItem> messageContextBuildItems) {
-    for (MessageContextBuildItem messageContextBuildItem : messageContextBuildItems) {
+  void registerMetadataSyntheticTypes(BeanRegistrar.RegistrationContext registrationContext,
+      List<MetadataBuildItem> messageContextBuildItems) {
+    for (MetadataBuildItem messageContextBuildItem : messageContextBuildItems) {
       Class<?> clazz = messageContextBuildItem.getClazz();
       registrationContext.configure(clazz)
           .types(clazz)
@@ -106,9 +106,9 @@ public class RmExtProcessor {
             ResultHandle paramsHandle = mc.readInstanceField(FieldDescriptor.of(mc.getMethodDescriptor()
                 .getDeclaringClass(), "params", Map.class), mc.getThis());
             ResultHandle creatorHandle = mc
-                .newInstance(MethodDescriptor.ofConstructor(MessageContextCreatorImpl.class));
+                .newInstance(MethodDescriptor.ofConstructor(MetadataCreatorImpl.class));
             ResultHandle[] params = { mc.loadClass(clazz), mc.getMethodParam(0), paramsHandle };
-            ResultHandle ret = mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(MessageContextCreator.class, "create",
+            ResultHandle ret = mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(MetadataCreator.class, "create",
                 Object.class, Class.class, CreationalContext.class, Map.class), creatorHandle, params);
             mc.returnValue(ret);
           })
@@ -228,9 +228,9 @@ public class RmExtProcessor {
   }
 
   @BuildStep
-  public void processMessageContext(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+  public void processMetadata(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
       BuildProducer<NativeImageProxyDefinitionBuildItem> nativeImageProxyDefinitionBuildItemBuildProducer,
-      BuildProducer<MessageContextBuildItem> messageContextBuildItemBuildProducer) {
+      BuildProducer<MetadataBuildItem> messageContextBuildItemBuildProducer) {
     final IndexView index = beanArchiveIndexBuildItem.getIndex();
     final Collection<AnnotationInstance> stereotypeInstances = index.getAnnotations(DotNames.MESSAGE_SCOPED);
     for (AnnotationInstance annotationInstance : stereotypeInstances) {
@@ -243,9 +243,9 @@ public class RmExtProcessor {
           .toString(),
           Thread.currentThread()
               .getContextClassLoader());
-      if (MessageContext.class.isAssignableFrom(clazz)) {
-        logger.infof("Found declaration of MessageContext " + clazz.getName());
-        messageContextBuildItemBuildProducer.produce(new MessageContextBuildItem(clazz));
+      if (Metadata.class.isAssignableFrom(clazz)) {
+        logger.infof("Found declaration of Metadata " + clazz.getName());
+        messageContextBuildItemBuildProducer.produce(new MetadataBuildItem(clazz));
         nativeImageProxyDefinitionBuildItemBuildProducer
             .produce(new NativeImageProxyDefinitionBuildItem(clazz.getName()));
       }
@@ -326,11 +326,11 @@ public class RmExtProcessor {
       MessageInitializerRecorder messageInitializerRecorder, RecorderContext recorderContext,
       BuildProducer<ReflectiveClassBuildItem> reflectiveClass, BuildProducer<GeneratedClassBuildItem> generatedClass,
       List<NodeBuildItem> nodeBuildItems, List<MessageInitializerBuildItem> messageInitializerBuildItems,
-      List<MessageContextBuildItem> messageContextBuildItems, BeanContainerBuildItem beanContainer) {
+      List<MetadataBuildItem> messageContextBuildItems, BeanContainerBuildItem beanContainer) {
     logger.info("build static init {");
 
     // This will enable QuarkusAsync to perform class loading
-    for (MessageContextBuildItem messageContextBuildItem : messageContextBuildItems) {
+    for (MetadataBuildItem messageContextBuildItem : messageContextBuildItems) {
       reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, messageContextBuildItem.getClazz()));
     }
 
@@ -380,6 +380,7 @@ public class RmExtProcessor {
     setupFunctionInvoker(recorderContext, reflectiveClass, classOutput, bean, methodInfo, functionInvoker);
   }
 
+  @SuppressWarnings("unchecked")
   private void setupFunctionInvoker(RecorderContext recorderContext,
       BuildProducer<ReflectiveClassBuildItem> reflectiveClass, ClassOutput classOutput, BeanInfo bean,
       MethodInfo methodInfo, QuarkusFunctionInvoker functionInvoker) {

@@ -4,14 +4,14 @@ import java.util.List;
 
 import org.apache.kafka.common.record.TimestampType;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
 
 import io.vertx.reactivex.kafka.client.producer.KafkaHeader;
 
 @MessageScoped
-public interface KafkaContext extends MessageContext {
-  String KEY = "MY_KAFKACONTEXT";
+public interface KafkaIncoming extends Metadata {
+  String KEY = "MY_KAFKA_INCOMING";
   String MERGE_KEY = KEY;
 
   String topic();

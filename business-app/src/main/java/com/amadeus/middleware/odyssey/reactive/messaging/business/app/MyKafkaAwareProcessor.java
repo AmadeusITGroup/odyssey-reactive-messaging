@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
-import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaIncoming;
 import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaTarget;
 
 @ApplicationScoped
@@ -18,8 +18,8 @@ public class MyKafkaAwareProcessor {
   @Incoming("kafka_channel")
   @Outgoing("rxin")
   @NodeName("stage5")
-  public void stage5(KafkaContext kafkaContext, KafkaTarget kafkaTarget) {
+  public void stage5(KafkaIncoming kafkaIncoming, KafkaTarget kafkaTarget) {
     kafkaTarget.topic("target_topic");
-    kafkaTarget.key(kafkaContext.key());
+    kafkaTarget.key(kafkaIncoming.key());
   }
 }

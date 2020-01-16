@@ -33,7 +33,7 @@
         <profile>
             <id>openwebbeans</id>
             <!--
-            Doesn't work for, it looks it doesn't see the registered MessageContext producer
+            Doesn't work for, it looks it doesn't see the registered Metadata producer
             -->
             <dependencies>
                 <dependency>

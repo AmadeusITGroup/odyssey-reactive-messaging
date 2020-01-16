@@ -36,9 +36,9 @@ import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageInitializer;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvokerImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
@@ -53,7 +53,7 @@ public class StreamExtension implements Extension {
   private MessageInitializerRegistryImpl messageInitializerRegistry = new MessageInitializerRegistryImpl();
 
   private TopologyBuilder builder = new TopologyBuilder();
-  private List<AnnotatedType<? extends MessageContext>> messageContexts = new ArrayList<>();
+  private List<AnnotatedType<? extends Metadata>> metadata = new ArrayList<>();
 
   private MutableSetMultimap<Type, Type> baseToFullyParameterizedTypes = UnifiedSetMultimap.newMultimap();
 
@@ -62,13 +62,13 @@ public class StreamExtension implements Extension {
     event.veto();
   }
 
-  <T extends MessageContext> void registerAndVetoMessageScopedMessageContexts(@Observes ProcessAnnotatedType<T> event) {
+  <T extends Metadata> void registerAndVetoMessageScopedMetadatas(@Observes ProcessAnnotatedType<T> event) {
     Class<?> theClass = event.getAnnotatedType()
         .getJavaClass();
     if (!AnnotationUtils.hasAnnotation(theClass, MessageScoped.class)) {
       return;
     }
-    messageContexts.add(event.getAnnotatedType());
+    metadata.add(event.getAnnotatedType());
     logger.trace("Vetoing: {}", theClass.getName());
     event.veto();
   }
@@ -118,7 +118,7 @@ public class StreamExtension implements Extension {
     }
     ParameterizedType parameterizedType = (ParameterizedType) type;
     // Message -> Message<Whatever>
-    if (Message.class.isAssignableFrom(clazz) || MessageContext.class.isAssignableFrom(clazz)) {
+    if (Message.class.isAssignableFrom(clazz) || Metadata.class.isAssignableFrom(clazz)) {
       if (!(parameterizedType.getActualTypeArguments()[0] instanceof WildcardType)) {
         baseToFullyParameterizedTypes.put(clazz, type);
       }
@@ -200,7 +200,7 @@ public class StreamExtension implements Extension {
   }
 
   /**
-   * Register the required CDI producer for all the Message, MessageContext and Async types.
+   * Register the required CDI producer for all the Message, Metadata and Async types.
    * 
    * @param abd
    *          CDI event
@@ -209,23 +209,23 @@ public class StreamExtension implements Extension {
     registerMessageScopedClassProducer(abd, Message.class);
     registerMessageScopedAsyncClassProducer(abd, Message.class);
 
-    messageContexts.stream()
+    metadata.stream()
         // Skip producer exposition for non-directly annotated classes
         .filter(annotatedType -> annotatedType.getJavaClass()
             .isAnnotationPresent(MessageScoped.class))
-        .forEach(annotatedType -> registerMessageContextRelatedProducers(abd, annotatedType));
+        .forEach(annotatedType -> registerMetadataRelatedProducers(abd, annotatedType));
   }
 
   /**
-   * Register the CDI producers for an actual MessageContext, Async&lt;MessageContext&gt; and all of their used
+   * Register the CDI producers for an actual Metadata, Async&lt;Metadata&gt; and all of their used
    * parameterized versions.
    *
    * @param abd
    *          CDI event
    * @param at
-   *          The MessageContext actual type.
+   *          The Metadata actual type.
    */
-  void registerMessageContextRelatedProducers(AfterBeanDiscovery abd, AnnotatedType<?> at) {
+  void registerMetadataRelatedProducers(AfterBeanDiscovery abd, AnnotatedType<?> at) {
     registerMessageScopedClassProducer(abd, at.getJavaClass());
     registerMessageScopedAsyncClassProducer(abd, at.getJavaClass());
   }
@@ -245,7 +245,7 @@ public class StreamExtension implements Extension {
     if (logger.isTraceEnabled()) {
       messageScopedTypes.forEach(mt -> logger.trace("Registering producer for: {}", mt));
     }
-    abd.<MessageContext> addBean()
+    abd.<Metadata> addBean()
         .types(messageScopedTypes)
         .createWith(new ProxyProducer<>(clazz));
   }

@@ -3,8 +3,8 @@ package com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provid
 import java.util.ArrayList;
 import java.util.List;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MutableMessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MutableMetadata;
 
 import io.vertx.reactivex.kafka.client.producer.KafkaHeader;
 
@@ -49,27 +49,32 @@ public class KafkaTargetImpl implements KafkaTarget {
   }
 
   @Override
-  public MutableMessageContext createChild() {
+  public MutableMetadata createChild() {
     return new KafkaTargetImpl(this.topic, this.key, this.headers());
   }
 
   @Override
-  public MessageContext merge(MessageContext... messageContexts) {
+  public Metadata metadataMerge(Metadata... metadata) {
     throw new RuntimeException("Not implemented");
   }
 
   @Override
-  public boolean isPropagable() {
+  public boolean isMetadataPropagable() {
     return true;
   }
 
   @Override
-  public String getContextKey() {
+  public String getMetadataKey() {
     return KEY;
   }
 
   @Override
-  public String getContextMergeKey() {
+  public String getMetadataMergeKey() {
     return MERGE_KEY;
+  }
+
+  @Override
+  public String toString() {
+    return "KafkaTarget{" + "topic='" + topic + '\'' + ", key=" + key + ", headers=" + headers + '}';
   }
 }

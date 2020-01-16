@@ -7,7 +7,7 @@ public interface MessageBuilder<T> {
 
   MessageBuilder<T> payload(T payload);
 
-  MessageBuilder<T> addContext(MessageContext messageContext);
+  MessageBuilder<T> addMetadata(Metadata metadata);
 
   /**
    * This is forcing the enabling/disabling of dependency injection activation for the message.

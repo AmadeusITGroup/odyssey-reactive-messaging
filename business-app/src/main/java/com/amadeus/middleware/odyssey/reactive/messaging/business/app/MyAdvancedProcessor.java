@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
-import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventContext;
-import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework.EventMetadata;
+import com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaIncoming;
 
 import io.reactivex.Flowable;
 
@@ -26,16 +26,16 @@ public class MyAdvancedProcessor {
   private static final Logger logger = LoggerFactory.getLogger(MyAdvancedProcessor.class);
 
   @Inject
-  private KafkaContext gkc;
+  private KafkaIncoming gkc;
 
   @Inject
-  private Async<KafkaContext> agkc;
+  private Async<KafkaIncoming> agkc;
 
   @Inject
-  private EventContext gec;
+  private EventMetadata gec;
 
   @Inject
-  private Async<EventContext> agec;
+  private Async<EventMetadata> agec;
 
   @Inject
   private Message<String> gmsg;
@@ -46,31 +46,31 @@ public class MyAdvancedProcessor {
   @Incoming("internal_channel")
   @Outgoing("kafka_channel")
   @NodeName("stage4")
-  public void stage4(KafkaContext kc, Async<KafkaContext> akc, EventContext ec, Async<EventContext> aec,
-      Message<String> msg, Async<Message<String>> amsg, Object payload) {
+  public void stage4(KafkaIncoming kc, Async<KafkaIncoming> akc, EventMetadata ec, Async<EventMetadata> aec,
+                     Message<String> msg, Async<Message<String>> amsg, Object payload) {
 
     logger.info("stage4 start");
 
     // Log objects coming from direct injection and CDI
-    logger.info("KafkaContext direct={},cdi={}", kc, gkc);
-    logger.info("EventContext direct={},cdi={}", ec, gec);
+    logger.info("KafkaIncoming direct={},cdi={}", kc, gkc);
+    logger.info("EventMetadata direct={},cdi={}", ec, gec);
     logger.info("Message.payload direct={},cdi={}", msg.getPayload(), gmsg.getPayload());
 
     // Log the payload
     logger.info("Payload direct={}", payload);
 
     // Log the objects coming from Async<> either by direct injection or CDI
-    EventContext asyncDirectEventContext = aec.get();
-    EventContext asyncCdiEventContext = agec.get();
-    logger.info("EventContext async direct={},cdi={}", asyncDirectEventContext, asyncCdiEventContext);
+    EventMetadata asyncDirectEventMetadata = aec.get();
+    EventMetadata asyncCdiEventMetadata = agec.get();
+    logger.info("EventMetadata async direct={},cdi={}", asyncDirectEventMetadata, asyncCdiEventMetadata);
 
-    // Updating the EventContext directly using the POJO
-    asyncCdiEventContext.setUniqueMessageId("pojo-" + asyncCdiEventContext.getUniqueMessageId());
-    logger.info("EventContext after POJO update direct={},cdi={}", ec, gec);
+    // Updating the EventMetadata directly using the POJO
+    asyncCdiEventMetadata.setUniqueMessageId("pojo-" + asyncCdiEventMetadata.getUniqueMessageId());
+    logger.info("EventMetadata after POJO update direct={},cdi={}", ec, gec);
 
-    // Yet another way, without injection, to get the KafkaContext
-    KafkaContext kc2 = msg.<KafkaContext>getContext(KafkaContext.KEY);
-    logger.debug("KafkaContext from message={}", kc2);
+    // Yet another way, without injection, to get the KafkaIncoming
+    KafkaIncoming kc2 = msg.<KafkaIncoming>getMetadata(KafkaIncoming.KEY);
+    logger.debug("KafkaIncoming from message={}", kc2);
 
     // Let's start asynchronous processing with the message
     sendToAsynchronousProcessing(amsg);

@@ -1,8 +1,8 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.corporate.framework;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
 
-public class EventContextImpl implements EventContext {
+public class EventMetadataImpl implements EventMetadata {
   private String uniqueMessageId;
 
   private String eventKey;
@@ -29,26 +29,26 @@ public class EventContextImpl implements EventContext {
 
   @Override
   public String toString() {
-    return "EventContext{" + "uniqueMessageId='" + uniqueMessageId + '\'' + ", key='" + eventKey + '\'' + '}';
+    return "EventMetadata{" + "uniqueMessageId='" + uniqueMessageId + '\'' + ", key='" + eventKey + '\'' + '}';
   }
 
   @Override
-  public MessageContext merge(MessageContext... messageContexts) {
+  public Metadata metadataMerge(Metadata... metadata) {
     throw new RuntimeException("Not implemented");
   }
 
   @Override
-  public boolean isPropagable() {
+  public boolean isMetadataPropagable() {
     return true;
   }
 
   @Override
-  public String getContextKey() {
+  public String getMetadataKey() {
     return KEY;
   }
 
   @Override
-  public String getContextMergeKey() {
+  public String getMetadataMergeKey() {
     return MERGE_KEY;
   }
 }

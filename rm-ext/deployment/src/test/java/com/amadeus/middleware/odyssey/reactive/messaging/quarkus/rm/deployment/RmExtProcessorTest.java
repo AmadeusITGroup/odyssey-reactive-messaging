@@ -24,8 +24,8 @@ public class RmExtProcessorTest {
   @RegisterExtension
   static final QuarkusUnitTest test = new QuarkusUnitTest()
       .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-          .addClasses(RmExtProcessor.class, DotNames.class, Processors.class, TestMessageContext.class,
-              TestMessageContextImpl.class, MyMessageInitializer.class));
+          .addClasses(RmExtProcessor.class, DotNames.class, Processors.class, TestMetadata.class,
+              TestMetadataImpl.class, MyMessageInitializer.class));
 
   @Inject
   public Processors foo;
