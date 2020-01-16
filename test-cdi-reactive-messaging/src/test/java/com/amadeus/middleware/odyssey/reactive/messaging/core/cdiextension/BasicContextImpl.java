@@ -1,6 +1,6 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
 
 public class BasicContextImpl implements BasicContext {
   @Override
@@ -9,22 +9,22 @@ public class BasicContextImpl implements BasicContext {
   }
 
   @Override
-  public MessageContext merge(MessageContext... messageContexts) {
+  public Metadata metadataMerge(Metadata... metadata) {
     throw new RuntimeException("not implemented");
   }
 
   @Override
-  public boolean isPropagable() {
+  public boolean isMetadataPropagable() {
     return false;
   }
 
   @Override
-  public String getContextKey() {
+  public String getMetadataKey() {
     return KEY;
   }
 
   @Override
-  public String getContextMergeKey() {
+  public String getMetadataMergeKey() {
     return MERGE_KEY;
   }
 }

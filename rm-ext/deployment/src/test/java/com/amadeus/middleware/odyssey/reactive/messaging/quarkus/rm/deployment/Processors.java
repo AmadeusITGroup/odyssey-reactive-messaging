@@ -35,10 +35,10 @@ public class Processors {
   private Async<Message<String>> asyncStringMessage;
 
   @Inject
-  TestMessageContext testMessageContext;
+  TestMetadata testMetadata;
 
   @Inject
-  Async<TestMessageContext> gtestMessageContextAsync;
+  Async<TestMetadata> gtestMetadataAsync;
 
   @Inject
   MyMessageInitializer myMessageInitializer; // to not be removed...
@@ -69,7 +69,7 @@ public class Processors {
   @Outgoing("incoming")
   public Publisher publisher() {
     Message message = Message.builder()
-        .addContext(new TestMessageContextImpl("Test0"))
+        .addMetadata(new TestMetadataImpl("Test0"))
         .payload(new String("Hello"))
         .build();
     return ReactiveStreams.of(message)
@@ -90,11 +90,11 @@ public class Processors {
 
   @Incoming("outgoing")
   @Outgoing("terminal")
-  public void processor2(Async<TestMessageContext> testMessageContextAsync, String msg) {
+  public void processor2(Async<TestMetadata> testMetadataAsync, String msg) {
     logger.infof("processor2 %s", msg);
-    logger.infof("processor2 testMessageContext %s", testMessageContext);
-    logger.infof("processor2 testMessageContext %s", testMessageContextAsync.get());
-    logger.infof("processor2 testMessageContext %s", gtestMessageContextAsync.get());
+    logger.infof("processor2 testMetadata %s", testMetadata);
+    logger.infof("processor2 testMetadata %s", testMetadataAsync.get());
+    logger.infof("processor2 testMetadata %s", gtestMetadataAsync.get());
   }
 
   @Incoming("terminal")

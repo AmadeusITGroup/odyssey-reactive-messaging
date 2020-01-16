@@ -4,16 +4,16 @@ import java.util.List;
 
 import org.apache.kafka.common.record.TimestampType;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
 
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumerRecord;
 import io.vertx.reactivex.kafka.client.producer.KafkaHeader;
 
-public class KafkaContextImpl implements KafkaContext {
+public class KafkaIncomingImpl implements KafkaIncoming {
 
   private KafkaConsumerRecord<?, ?> kcr;
 
-  KafkaContextImpl(KafkaConsumerRecord<?, ?> kcr) {
+  KafkaIncomingImpl(KafkaConsumerRecord<?, ?> kcr) {
     this.kcr = kcr;
   }
 
@@ -59,22 +59,22 @@ public class KafkaContextImpl implements KafkaContext {
   }
 
   @Override
-  public MessageContext merge(MessageContext... messageContexts) {
+  public Metadata metadataMerge(Metadata... metadata) {
     throw new RuntimeException("Not implemented");
   }
 
   @Override
-  public boolean isPropagable() {
+  public boolean isMetadataPropagable() {
     return false;
   }
 
   @Override
-  public String getContextKey() {
+  public String getMetadataKey() {
     return KEY;
   }
 
   @Override
-  public String getContextMergeKey() {
+  public String getMetadataMergeKey() {
     return MERGE_KEY;
   }
 }

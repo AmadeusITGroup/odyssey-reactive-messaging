@@ -21,14 +21,14 @@ public class MessageInitializerRegistryImpl implements MessageInitializerRegistr
 
   private static class InvokationTarget {
     private BaseFunctionInvoker functionInvoker;
-    private Provider<?> messageContextFactoryInstance;
+    private Provider<?> messageInitializerInstance;
 
     public InvokationTarget(Class<?> clazz, Method method) {
       functionInvoker = new BaseFunctionInvoker(clazz, method);
     }
 
     public void invoke(Message message) throws FunctionInvocationException {
-      functionInvoker.invoke(messageContextFactoryInstance.get(), message);
+      functionInvoker.invoke(messageInitializerInstance.get(), message);
     }
 
     public Class<?> getFactoryClass() {
@@ -46,7 +46,7 @@ public class MessageInitializerRegistryImpl implements MessageInitializerRegistr
     logger.debug("initialize");
     Instance<Object> instance = beanManager.createInstance();
     for (InvokationTarget invokationTarget : invokationTargets) {
-      invokationTarget.messageContextFactoryInstance = instance.select(invokationTarget.getFactoryClass());
+      invokationTarget.messageInitializerInstance = instance.select(invokationTarget.getFactoryClass());
     }
   }
 

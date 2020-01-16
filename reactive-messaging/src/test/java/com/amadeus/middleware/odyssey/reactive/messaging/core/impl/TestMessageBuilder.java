@@ -5,7 +5,7 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 class TestMessageBuilder<T> extends AbstractMessageBuilder<T> {
   @Override
   public Message<T> build() {
-    MessageImpl<T> message = new MessageImpl<>(contexts, payload);
+    MessageImpl<T> message = new MessageImpl<>(metadata, payload);
     AbstractMessageBuilder.setupParentChildLink(parents, message);
     return message;
   }

@@ -55,9 +55,9 @@ Here is the basic API:
 
 ```java
 public interface Message<T> {
-  Iterable<MessageContext> getContexts();
-  <C extends MessageContext> C getMessageContext(String key);
-  void addContext(MessageContext ctx);
+  Iterable<Metadata> getMetadata();
+  <C extends Metadata> C getMetadata(String key);
+  void addMetadata(Metadata ctx);
   T getPayload();
   void setPayload(T payload);
   ...
@@ -69,18 +69,18 @@ public interface Message<T> {
 As with the MP-RM v1.0, the Message is parameterized by the payload type.
 A payload is mutable.
 
-### MessageContext
+### Metadata
 
-`MessageContext` is a new addition to the `Message`.
+`Metadata` is a new addition to the `Message`.
 It enables to provide contextualized meta-data to it.
 As part of the `Message` it is a POJO.
 
 This contextualization can be provided by the source connector.
-For instance a Kafka connector, will provide a `KafkaContext` with Kafka specific pieces of information, e.g.:
+For instance a Kafka connector, will provide a `KafkaIncoming` with Kafka specific pieces of information, e.g.:
 
 ```java
 @MessageScoped
-public interface KafkaContext extends MessageContext {
+public interface KafkaIncoming extends Metadata {
   String KEY = "MY_KAFKA_IMPLEMENTATION";
 
   String topic();
@@ -91,11 +91,11 @@ public interface KafkaContext extends MessageContext {
 }
 ```
 
-Beyond the source connector, a corporate framework can also provide `MessageContext(s)` to enrich the message just after it creation, e.g.:
+Beyond the source connector, a corporate framework can also provide `Metadata(s)` to enrich the message just after it creation, e.g.:
 
 ```java
 @MessageScoped
-public interface EventContext extends MessageContext {
+public interface EventMetadata extends Metadata {
   String getUniqueMessageId();
 }
 ```
@@ -121,12 +121,12 @@ following signature:
 
 What is added to the API is:
 
-The injection of `MessageContext` in method call:
+The injection of `Metadata` in method call:
 
 ```java
   @Incoming("internal_channel")
   @Outgoing("output_channel")
-  public void example(KafkaContext kafkaContext, EventContext eventContext, Message<String> message)
+  public void example(KafkaIncoming kafkaIncoming, EventMetadata EventMetadata, Message<String> message)
     ...
   }
 ```
@@ -136,10 +136,10 @@ The injection of what can be injected into the method call using regular DI mech
 
 ```java
   @Inject
-  private KafkaContext kafkaContext;
+  private KafkaIncoming kafkaIncoming;
 
   @Inject
-  private EventContext eventContext;
+  private EventMetadata EventMetadata;
 
   @Inject
   private Message<String> message;
@@ -221,7 +221,7 @@ Let's dig into more details, and focus on the lifecycle of `Message(s)`.
 *One example can be found in the module `kafka-connector-provider`*
 
 A `Message` can be built only by using the framework API.
-A source connector can provide it own `MessageContext` at this time, e.g.:
+A source connector can provide it own `Metadata` at this time, e.g.:
 
 ```java
     KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config);
@@ -229,7 +229,7 @@ A source connector can provide it own `MessageContext` at this time, e.g.:
 
     return consumer.toFlowable()
         .map(record -> Message.builder()
-            .addMessageContext(new KafkaContext(record))
+            .addMetadata(new KafkaIncoming(record))
             .payload(record.value())
             .build());
 ```
@@ -249,31 +249,31 @@ This deletion is handled by the CDI implementation of the framework upon message
 
 Note: This context is not necessarily a CDI `Context` (...).
 
-#### Adding a `MessageContext` to the message just after it has been built
+#### Adding a `Metadata` to the message just after it has been built
 
 *One example can be found in the module `corporate-framework`*
 
-It is possible to enrich the `Message` with additional `MessageContext(s)` when the message is built.
+It is possible to enrich the `Message` with additional `Metadata(s)` when the message is built.
 To do so, the `MessageBuilder` will call method(s) annotated with `@MessageInitializer` in a bean.
 
-The method will then be able to customize the message and, if needed, get access to other `MessageContext` as the
+The method will then be able to customize the message and, if needed, get access to other `Metadata` as the
 bean can be injected.
-The injected `MessageContext` should be the one initially given to the builder to prevent issue with creation order.
+The injected `Metadata` should be the one initially given to the builder to prevent issue with creation order.
 
 ```java
-public class EventContextMessageInitializer {
+public class EventMetadataMessageInitializer {
 
   @Inject
-  private KafkaContext kafkaContext;
+  private KafkaIncoming kafkaIncoming;
 
   @Inject
   private Message<?> message;
 
   @MessageInitializer
-  public void initialize(KafkaContext direcKafkaContext) {
-    EventContext ec = new EventContextImpl();
-    ec.setEventKey((String) kafkaContext.key());
-    message.addContext(ec);
+  public void initialize(KafkaIncoming direcKafkaIncoming) {
+    EventMetadata ec = new EventMetadataImpl();
+    ec.setEventKey((String) kafkaIncoming.key());
+    message.addMetadata(ec);
 
     String payload = (String) message.getPayload();
     ec.setUniqueMessageId(payload.split("-")[0]);
@@ -303,8 +303,8 @@ The naturally expected semantic for theses messages is to be children of `m0`:
 
 * Often, the payload is not expected to be shared (while it can be in some cases).
 
-* Some `MessageContext` might be propagated, other not, e.g.: the `KafkaContext`.
-Some other `MessageContext` can be built from the previous one (e.g. for OpenTracing span creation
+* Some `Metadata` might be propagated, other not, e.g.: the `KafkaIncoming`.
+Some other `Metadata` can be built from the previous one (e.g. for OpenTracing span creation
 using [SpanBuilder.asChildOf](https://github.com/opentracing/opentracing-java/blob/master/opentracing-api/src/main/java/io/opentracing/Tracer.java#L144)).
 
 * Regarding CDI, each new message should have its own specific context.
@@ -315,15 +315,15 @@ Here is a first example of how a child message `m1` could be created from `m0` a
   Emitter<Message<String>> way1;
   ...
       { ...
-      // Build a derived EventContext:
-      // * The EventContext could contain OpenTracing id and it is wanted to created a following span.
-      // * The EventContext provider would have to also provide this builder.
-      EventContext m1ec = EventContext.build(m0.getContext(EventContext.KEY)).build();
+      // Build a derived EventMetadata:
+      // * The EventMetadata could contain OpenTracing id and it is wanted to created a following span.
+      // * The EventMetadata provider would have to also provide this builder.
+      EventMetadata m1ec = EventMetadata.build(m0.getMetadata(EventMetadata.KEY)).build();
       
-      // Create m1 with the same KafkaContext and the derived EventContext
+      // Create m1 with the same KafkaIncoming and the derived EventMetadata
       Message<String> m1 = Message.builder()
         .fromParent(m0)
-        .context(m1ec)
+        .addMetadata(m1ec)
         .payload("processed: " + m0.getPayload())
         .build();
     
@@ -334,9 +334,9 @@ Here is a first example of how a child message `m1` could be created from `m0` a
 However, for creating a child `Message` with a new payload a *one-liner* would be nicer.
 To do so, let's introduce the following concepts:
 
-A `MessageContext` is regarded as immutable.
-A `MutableMessageContext` is a sub-interface of `MessageContext` for mutable `MessageContext` and expose a method `createChild()`.
-A child-`Message` will the be able to use its parent `MessageContext` instance, except when mutable where a child-`MessageContext` will be created.
+A `Metadata` is regarded as immutable.
+A `MutableMetadata` is a sub-interface of `Metadata` for mutable `Metadata` and expose a method `createChild()`.
+A child-`Message` will the be able to use its parent `Metadata` instance, except when mutable where a child-`Metadata` will be created.
 Hence, the previous code can be re-written as:
 
 ```java
@@ -352,7 +352,7 @@ Hence, the previous code can be re-written as:
       ... }
 ```
 
-The `MessageBuilder` will automatically propagate the `MessageContext` into the child-`Message` following this logic.
+The `MessageBuilder` will automatically propagate the `Metadata` into the child-`Message` following this logic.
 
 #### Message acknowledgment
 
@@ -478,66 +478,66 @@ Let's considere we have two different source connectors:
 
 The *business processor* will issue the message `mC` from `mA` and `mB` with the following strategy:
 
-* For each type of `MessageContext`, a new `MessageContext` should be associate to `mC` that has been built from the
+* For each type of `Metadata`, a new `Metadata` should be associate to `mC` that has been built from the
 merge of the instances of the same type coming from `mA` and `mB`.
-The merge strategy is typically to be provided by the `MessageContext` provider.
+The merge strategy is typically to be provided by the `Metadata` provider.
 
 * The payload of `mC` has to be provided by the business developer.
 
 * The `mC` message global acknowledgement is mandatory for the staged acknowledged of `mA` and `mB`.
 
-A concrete `MessageContext` type can either support naturally this merge, or not.
-Let's considere a Kafka `MessageContext`.
+A concrete `Metadata` type can either support naturally this merge, or not.
+Let's considere a Kafka `Metadata`.
 It may indicate the source Kafka topic from where the message is coming but, in case of a merge,
 it might not have the capability to indicate the list of the several source topics:
 
 ```java
-public interface KafkaContext extends MessageContext {
+public interface KafkaIncoming extends Metadata {
   ...
   String topic();
   ...
 }
 ```
 
-To achieve this, a new kind of Kafka `MessageContext` supporting multiple sources might be introduced:
+To achieve this, a new kind of Kafka `Metadata` supporting multiple sources might be introduced:
 
 ```java
-public interface MultiKafkaContext extends MutableMessageContext {
+public interface MultiKafkaIncoming extends MutableMetadata {
   ...
-  List<KafkaContext> getContexts();
+  List<KafkaIncoming> getMetadata();
   ...
 }
 ```
 
-Ideally, from user perspective, when it is known that there is a single origin it would be wanted to deal with `KafkaContext`
-and, when it's not the case, `MultiKafkaContext` would be used.
-Hence, in our example, messages A and B would have a `KafkaContext` and message C would have a `MultiKafkaContext`.
-This means, the `MessageContext` provide should expose the capability to merge `KafkaContext(s)` and `MultiKafkaContext(s)` towards a `MultiKafkaContext`.
+Ideally, from user perspective, when it is known that there is a single origin it would be wanted to deal with `KafkaIncoming`
+and, when it's not the case, `MultiKafkaIncoming` would be used.
+Hence, in our example, messages A and B would have a `KafkaIncoming` and message C would have a `MultiKafkaIncoming`.
+This means, the `Metadata` provide should expose the capability to merge `KafkaIncoming(s)` and `MultiKafkaIncoming(s)` towards a `MultiKafkaIncoming`.
 
-To achieve this, `MessageContext` exposes the following method that is to be called by the framework when a *child* message is created:
+To achieve this, `Metadata` exposes the following method that is to be called by the framework when a *child* message is created:
 
 ```java
-public interface MessageContext {
+public interface Metadata {
   ...
-  MessageContext merge(MessageContext... messageContexts);
+  Metadata merge(Metadata... metadata);
   ...
 }
 ```
 
-This method will be called to merge compatible `MessageContexts`.
-For instance, a `KafkaContext` and a `MultiKafkaContext` that are compatible.
-However, a `KafkaContext` and RabbitMQ `MessageContext` are not compatible.
-In order for a set of `MessageContext` type to indicate their compatibility, the following `getContextMergeKey` method is also exposed by `MessageContext`:
+This method will be called to merge compatible `Metadatas`.
+For instance, a `KafkaIncoming` and a `MultiKafkaIncoming` that are compatible.
+However, a `KafkaIncoming` and RabbitMQ `Metadata` are not compatible.
+In order for a set of `Metadata` type to indicate their compatibility, the following `getMetadataMergeKey` method is also exposed by `Metadata`:
 
 ```java
-public interface MessageContext {
+public interface Metadata {
   ...
-  String getContextMergeKey();
+  String getMetadataMergeKey();
   ...
 }
 ```
 
-All the `MessageContext` that are compatible should return the same `String` value.
+All the `Metadata` that are compatible should return the same `String` value.
 The framework will call the `merge` method only for compatible type.
 
 Here is the representation of the merge of two messages coming from a Kafka source and a message coming
@@ -545,12 +545,12 @@ for a RabbitMQ source:
 
 ![hl](doc/example-merge.png)
 
-The two `KafkaContext` are merged as they return the same value when `getContextMergeKey()` is called.
-The result of the merge is producing a `MultiKafkaContext` that is also returning the same value for `getContextMergeKey()`.
+The two `KafkaIncoming` are merged as they return the same value when `getMetadataMergeKey()` is called.
+The result of the merge is producing a `MultiKafkaIncoming` that is also returning the same value for `getMetadataMergeKey()`.
 
-The `RabbitMQContext` is not merged as it returns a value not shared with other `MessageContext` for `getContextMergeKey()`.
+The `RabbitMQMetadata` is not merged as it returns a value not shared with other `Metadata` for `getMetadataMergeKey()`.
 
-Note: Beyond child message creation, adding a `MessageContext` into a message may also result in calling this merge logic.
+Note: Beyond child message creation, adding a `Metadata` into a message may also result in calling this merge logic.
 
 *One example can be found in the module `reactive-messaging` in `MessageImplTest`.*
 
@@ -566,7 +566,7 @@ Here are the main steps:
 
 1- A connector is receiving a message from a queueing system (or a rest call...).
 
-2- The connector is calling the framework `MessageBuilder` with the payload an possible `MessageContext(s)`.
+2- The connector is calling the framework `MessageBuilder` with the payload an possible `Metadata(s)`.
 
 3- The framework is spawning a new `MessageScopeContext` unique to this message.
 The message keeps secretly an identifier to this context.
@@ -601,7 +601,7 @@ the `MessageScopeContext` is destroyed.
 
 This implementation is storing all the injected instance in a simple class (`MessageScopedContext`) that is not a CDI context.
 
-The injected beans (`Message`, `EventContext`...) are hand-made proxies performing a look-up in this `MessageScopedContext` class.
+The injected beans (`Message`, `EventMetadata`...) are hand-made proxies performing a look-up in this `MessageScopedContext` class.
 Hence, two levels of proxies are used.
 This could be improved by wrapping injection targets (see the link to the RestEasy code below).
 
@@ -677,8 +677,8 @@ As with current API, he can simply request for the payload and process it:
  ```java
      @Incoming("x")
      @Outgoing("y")
-     void process(EventContext eventContext, Payload payload) {
-       String eventId = eventContext.getUniqueMessageId();
+     void process(EventMetadata eventMetadata, Payload payload) {
+       String eventId = eventMetadata.getUniqueMessageId();
        ...
      }
  ```
@@ -692,8 +692,8 @@ Let's consider implementing a Kafka-to-Kafka replicator that will drop messages 
     Emitter<Message<?>> output;
    
     @Incoming("input")
-    void process(KafkaContext kafkaContext, Message message) {
-      if (kafkaContext.timestamp() < /* something */)) {
+    void process(KafkaIncoming kafkaIncoming, Message message) {
+      if (kafkaIncoming.timestamp() < /* something */)) {
         // drop it
       } else {
         output.send(message);
@@ -713,7 +713,7 @@ Example 1:
 ```java
   @Incoming("input")
   @Outgoing("output")
-  public void process(EventContext eventContext, Payload payload)
+  public void process(EventMetadata eventMetadata, Payload payload)
     ...
   }
 ```
@@ -722,7 +722,7 @@ Example 2:
 
 ```java
   @Inject
-  private EventContext eventContext;
+  private EventMetadata eventMetadata;
 
   @Incoming("input")
   @Outgoing("output")
@@ -754,7 +754,7 @@ This enables to implement a processor with RxJava, e.g.:
               .payload(message.getPayload())
               .build();
    
-          KafkaTarget target = child.getMessageContext(KafkaTarget.KEY);
+          KafkaTarget target = child.getMetadata(KafkaTarget.KEY);
           target.topic(target.topic() + "-child");
    
           return Flowable.fromArray(message, child);
@@ -865,7 +865,7 @@ and a reactive stream started as follow:
 This results in the following king of outcome:
 
 ```
-16:23:15.707 [vert.x-eventloop-thread-0] INFO  c.a.m.o.r.m.c.f.LoggerNodeInterceptor:28 - before: stage1 message={messageContexts=[{topic='mytopic', partition='3', offset='0'}, com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaTargetImpl@f8fdcdd, {uniqueMessageId='124', key='key2'}], payload=124-value2}
+16:23:15.707 [vert.x-eventloop-thread-0] INFO  c.a.m.o.r.m.c.f.LoggerNodeInterceptor:28 - before: stage1 message={metadata=[{topic='mytopic', partition='3', offset='0'}, com.amadeus.middleware.odyssey.reactive.messaging.kafka.connector.provider.KafkaTargetImpl@f8fdcdd, {uniqueMessageId='124', key='key2'}], payload=124-value2}
 16:23:15.707 [vert.x-eventloop-thread-0] INFO  c.a.m.o.r.m.b.a.MyBusinessProcessor:19 - stage1 start
 16:23:15.707 [vert.x-eventloop-thread-0] INFO  c.a.m.o.r.m.b.a.MyBusinessProcessor:20 - stage1 payload=124-value2
 16:23:15.707 [vert.x-eventloop-thread-0] INFO  c.a.m.o.r.m.b.a.MyBusinessProcessor:21 - stage1 stop
@@ -899,7 +899,7 @@ However only CDI-spec API is used.
 It does not follow the specification but provides an actual Publisher of Kafka messages using the
 prototype API.
 
-`corporate-framework`: This provides `EventContext` to the message computed from the `KafkaContext` and the payload.
+`corporate-framework`: This provides `EventMetadata` to the message computed from the `KafkaIncoming` and the payload.
 
 `business-app`: This is an example of a business application using the framework.
 
@@ -934,13 +934,13 @@ Then, `BusinessApp.main` can be launched producing the following output:
 10:41:57.595 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyBusinessProcessor:34 - stage3 event id=124 payload=124-value2
 10:41:57.595 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyBusinessProcessor:35 - stage3 stop
 10:41:57.597 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:50 - stage4 start
-10:41:57.597 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:53 - KafkaContext direct={topic='mytopic', partition='3', offset='0'},cdi={topic='mytopic', partition='3', offset='0'}
-10:41:57.597 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:54 - EventContext direct={uniqueMessageId='124', key='0'},cdi={uniqueMessageId='124', key='0'}
+10:41:57.597 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:53 - KafkaIncoming direct={topic='mytopic', partition='3', offset='0'},cdi={topic='mytopic', partition='3', offset='0'}
+10:41:57.597 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:54 - EventMetadata direct={uniqueMessageId='124', key='0'},cdi={uniqueMessageId='124', key='0'}
 10:41:57.597 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:55 - Message.payload direct=124-value2,cdi=124-value2
 10:41:57.597 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:58 - Payload direct=124-value2
-10:41:57.598 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:63 - EventContext async direct={uniqueMessageId='124', key='0'},cdi={uniqueMessageId='124', key='0'}
-10:41:57.598 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:67 - EventContext after POJO update direct={uniqueMessageId='pojo-124', key='0'},cdi={uniqueMessageId='pojo-124', key='0'}
-10:41:57.598 [vert.x-eventloop-thread-0] DEBUG c.a.m.e.r.m.b.a.MyAdvancedProcessor:71 - KafkaContext from message={topic='mytopic', partition='3', offset='0'}
+10:41:57.598 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:63 - EventMetadata async direct={uniqueMessageId='124', key='0'},cdi={uniqueMessageId='124', key='0'}
+10:41:57.598 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:67 - EventMetadata after POJO update direct={uniqueMessageId='pojo-124', key='0'},cdi={uniqueMessageId='pojo-124', key='0'}
+10:41:57.598 [vert.x-eventloop-thread-0] DEBUG c.a.m.e.r.m.b.a.MyAdvancedProcessor:71 - KafkaIncoming from message={topic='mytopic', partition='3', offset='0'}
 10:41:57.609 [vert.x-eventloop-thread-0] INFO  c.a.m.e.r.m.b.a.MyAdvancedProcessor:76 - stage4 stop
 ...
 ```

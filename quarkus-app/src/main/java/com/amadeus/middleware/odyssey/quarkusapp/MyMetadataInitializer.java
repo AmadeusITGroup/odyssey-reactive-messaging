@@ -7,10 +7,10 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageInitializer
 
 @ApplicationScoped
 @io.quarkus.arc.Unremovable
-public class MyMessageContextInitializer {
+public class MyMetadataInitializer {
 
   @MessageInitializer
   public void justdoit(Message message) {
-    message.addContext(new MyMessageContextImpl("hello"));
+    message.addMetadata(new MyMetadataImpl("hello"));
   }
 }

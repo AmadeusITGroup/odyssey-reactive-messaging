@@ -7,19 +7,19 @@ import java.util.concurrent.CompletableFuture;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageBuilder;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MutableMessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.MutableMetadata;
 
 public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
 
   protected boolean dependencyInjection = true; // TODO: enable "global" configuration
 
   protected List<Message<?>> parents = new ArrayList<>();
-  protected List<MessageContext> contexts = new ArrayList<>();
+  protected List<Metadata> metadata = new ArrayList<>();
   protected T payload;
 
   /**
-   * Warning: MessageContexts are not copied from the parent at this time.
+   * Warning: Metadatas are not copied from the parent at this time.
    * 
    * @param parents
    * @return
@@ -37,8 +37,8 @@ public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
   }
 
   @Override
-  public MessageBuilder<T> addContext(MessageContext messageContext) {
-    contexts.add(messageContext);
+  public MessageBuilder<T> addMetadata(Metadata metadata) {
+    this.metadata.add(metadata);
     return this;
   }
 
@@ -54,7 +54,7 @@ public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
     }
 
     for (Message<?> parent : parents) {
-      mergeMessageContexts(parent, child);
+      mergeMetadatas(parent, child);
       setAcknowledgmentLink(parent, child);
     }
   }
@@ -66,19 +66,19 @@ public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
     CompletableFutureUtils.propagate(merged, previousParentStagedAck);
   }
 
-  private static void mergeMessageContexts(Message<?> parent, Message<?> child) {
-    for (MessageContext messageContext : parent.getContexts()) {
-      if (!messageContext.isPropagable()) {
+  private static void mergeMetadatas(Message<?> parent, Message<?> child) {
+    for (Metadata metadata : parent.getMetadata()) {
+      if (!metadata.isMetadataPropagable()) {
         continue;
       }
-      MessageContext messageContextToMerge;
-      if (MutableMessageContext.class.isAssignableFrom(messageContext.getClass())) {
-        MutableMessageContext mmc = (MutableMessageContext) messageContext;
-        messageContextToMerge = mmc.createChild();
+      Metadata metadataToMerge;
+      if (MutableMetadata.class.isAssignableFrom(metadata.getClass())) {
+        MutableMetadata mmc = (MutableMetadata) metadata;
+        metadataToMerge = mmc.createChild();
       } else {
-        messageContextToMerge = messageContext;
+        metadataToMerge = metadata;
       }
-      child.mergeContext(messageContextToMerge);
+      child.mergeMetadata(metadataToMerge);
     }
   }
 }

@@ -6,7 +6,7 @@ import javax.enterprise.context.spi.CreationalContext;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.ProxyProducer;
 
-public class MessageContextCreatorImpl<T> implements MessageContextCreator<T> {
+public class MetadataCreatorImpl<T> implements MetadataCreator<T> {
 
   @SuppressWarnings("unchecked")
   @Override

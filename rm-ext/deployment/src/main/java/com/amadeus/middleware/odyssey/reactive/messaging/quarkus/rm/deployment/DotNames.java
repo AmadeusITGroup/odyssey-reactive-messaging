@@ -6,7 +6,7 @@ import org.jboss.jandex.DotName;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageInitializer;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
@@ -20,7 +20,7 @@ public final class DotNames {
   static final DotName INCOMING = DotName.createSimple(Incoming.class.getName());
   static final DotName OUTGOING = DotName.createSimple(Outgoing.class.getName());
   static final DotName MESSAGE = DotName.createSimple(Message.class.getName());
-  static final DotName MESSAGE_CONTEXT = DotName.createSimple(MessageContext.class.getName());
+  static final DotName MESSAGE_CONTEXT = DotName.createSimple(Metadata.class.getName());
   static final DotName MESSAGE_SCOPED = DotName.createSimple(MessageScoped.class.getName());
   static final DotName ASYNC = DotName.createSimple(Async.class.getName());
   static final DotName MESSAGE_INITIALIZER = DotName.createSimple(MessageInitializer.class.getName());
