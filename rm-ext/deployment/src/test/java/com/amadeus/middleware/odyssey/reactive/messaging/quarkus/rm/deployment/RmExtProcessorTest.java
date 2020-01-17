@@ -28,18 +28,18 @@ public class RmExtProcessorTest {
               TestMetadataImpl.class, MyMessageInitializer.class));
 
   @Inject
-  public Processors foo;
+  public Processors processors;
 
   @Test
   public void testRootResource() throws FunctionInvocationException {
-    Assert.assertNotNull(foo);
-    Topology topology = foo.getTopology();
+    Assert.assertNotNull(processors);
+    Topology topology = processors.getTopology();
     Assert.assertNotNull(topology);
     List<ProcessorNode> nodes = topology.getProcessorNodes();
     Assert.assertNotNull(nodes);
     Assert.assertFalse(nodes.isEmpty());
 
-    ReactiveStreamFactory reactiveStreamFactory = foo.getReactiveStreamFactory();
+    ReactiveStreamFactory reactiveStreamFactory = processors.getReactiveStreamFactory();
     reactiveStreamFactory.build(topology);
   }
 }

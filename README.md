@@ -126,7 +126,7 @@ The injection of `Metadata` in method call:
 ```java
   @Incoming("internal_channel")
   @Outgoing("output_channel")
-  public void example(KafkaIncoming kafkaIncoming, EventMetadata EventMetadata, Message<String> message)
+  public void example(KafkaIncoming kafkaIncoming, EventMetadata eventMetadata, Message<String> message)
     ...
   }
 ```
@@ -139,7 +139,7 @@ The injection of what can be injected into the method call using regular DI mech
   private KafkaIncoming kafkaIncoming;
 
   @Inject
-  private EventMetadata EventMetadata;
+  private EventMetadata eventMetadata;
 
   @Inject
   private Message<String> message;

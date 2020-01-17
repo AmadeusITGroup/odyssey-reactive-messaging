@@ -1,7 +1,5 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.reactive;
 
-import javax.enterprise.inject.Instance;
-
 import org.eclipse.microprofile.reactive.streams.operators.CompletionRunner;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
@@ -28,10 +26,8 @@ class ReactiveStreamBuilderVisitor extends AbstractVisitor {
 
   private PublisherBuilder<Message<?>> publisherBuilder;
   private CompletionRunner<Void> completionRunner;
-  private Instance<Object> instance;
 
-  public ReactiveStreamBuilderVisitor(Instance<Object> instance) {
-    this.instance = instance;
+  public ReactiveStreamBuilderVisitor() {
   }
 
   @Override
@@ -80,10 +76,6 @@ class ReactiveStreamBuilderVisitor extends AbstractVisitor {
   }
 
   private void buildDirectFunction(FunctionInvoker functionInvoker) {
-    if (functionInvoker.getTargetInstance() == null) {
-      functionInvoker.setTargetInstance(instance.select(functionInvoker.getTargetClass())
-          .get());
-    }
     publisherBuilder = publisherBuilder.peek(m -> {
       try {
         functionInvoker.invoke((Message<?>) m);
@@ -93,10 +85,10 @@ class ReactiveStreamBuilderVisitor extends AbstractVisitor {
     });
   }
 
+  @SuppressWarnings("unchecked")
   private void buildPublisherPublisher(FunctionInvoker functionInvoker) {
     try {
-      Publisher<Message<?>> publisher = functionInvoker.invoke(instance.select(functionInvoker.getTargetClass())
-          .get(), publisherBuilder);
+      Publisher<Message<?>> publisher = (Publisher<Message<?>>) functionInvoker.invoke(publisherBuilder);
       publisherBuilder = ReactiveStreams.fromPublisher(publisher);
     } catch (FunctionInvocationException e) {
       logger.error("Failure", e);

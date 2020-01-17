@@ -4,31 +4,26 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Provider;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.BaseFunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageInitializerRegistry;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReflectiveFunctionInvoker;
 
-public class MessageInitializerRegistryImpl implements MessageInitializerRegistry {
-  private static final Logger logger = LoggerFactory.getLogger(MessageInitializerRegistryImpl.class);
+public class CDIMessageInitializerRegistry implements MessageInitializerRegistry {
+  private static final Logger logger = LoggerFactory.getLogger(CDIMessageInitializerRegistry.class);
 
   private static class InvokationTarget {
-    private BaseFunctionInvoker functionInvoker;
-    private Provider<?> messageInitializerInstance;
+    private ReflectiveFunctionInvoker functionInvoker;
 
     public InvokationTarget(Class<?> clazz, Method method) {
-      functionInvoker = new BaseFunctionInvoker(clazz, method);
+      functionInvoker = new CDIFunctionInvoker(clazz, method);
     }
 
     public void invoke(Message message) throws FunctionInvocationException {
-      functionInvoker.invoke(messageInitializerInstance.get(), message);
+      functionInvoker.invoke(message);
     }
 
     public Class<?> getFactoryClass() {
@@ -42,11 +37,10 @@ public class MessageInitializerRegistryImpl implements MessageInitializerRegistr
 
   private List<InvokationTarget> invokationTargets = new ArrayList<>();
 
-  public void initialize(BeanManager beanManager) {
+  public void initialize() {
     logger.debug("initialize");
-    Instance<Object> instance = beanManager.createInstance();
     for (InvokationTarget invokationTarget : invokationTargets) {
-      invokationTarget.messageInitializerInstance = instance.select(invokationTarget.getFactoryClass());
+      invokationTarget.functionInvoker.initialize();
     }
   }
 

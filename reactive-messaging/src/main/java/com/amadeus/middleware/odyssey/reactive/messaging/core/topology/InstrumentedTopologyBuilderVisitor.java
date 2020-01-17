@@ -16,6 +16,7 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.After;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Before;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeInterceptor;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReflectiveFunctionInvoker;
 
 public class InstrumentedTopologyBuilderVisitor extends AbstractVisitor {
   private static final Logger logger = LoggerFactory.getLogger(InstrumentedTopologyBuilderVisitor.class);
@@ -67,7 +68,7 @@ public class InstrumentedTopologyBuilderVisitor extends AbstractVisitor {
     PublisherNode<?> newPublisherNode = new PublisherNode<>(node.getName(), node.getPublisherInvoker(), intercepted);
 
     NodeInterceptor nodeInterceptor = nodeInterceptorSupplier.get();
-    nodeInterceptor.setNodeName(node.getName());
+    nodeInterceptor.initialize(node.getName());
     injectFields(nodeInterceptor);
 
     Method method = findAfterMethod(nodeInterceptor.getClass());
@@ -77,11 +78,8 @@ public class InstrumentedTopologyBuilderVisitor extends AbstractVisitor {
       return;
     }
 
-    FunctionInvoker functionInvoker = FunctionInvoker.builder()
-        .defaultTargetInstance(nodeInterceptor)
-        .targetClass(nodeInterceptor.getClass())
-        .targetMethod(method)
-        .build();
+    FunctionInvoker functionInvoker = new ReflectiveFunctionInvoker(nodeInterceptor, nodeInterceptor.getClass(),
+        method, true);
 
     ProcessorNode processorNode = new ProcessorNode("post-" + node.getName(), functionInvoker, intercepted, children);
 
@@ -105,7 +103,7 @@ public class InstrumentedTopologyBuilderVisitor extends AbstractVisitor {
         .toArray(String[]::new);
 
     NodeInterceptor nodeInterceptor = nodeInterceptorSupplier.get();
-    nodeInterceptor.setNodeName(node.getName());
+    nodeInterceptor.initialize(node.getName());
     injectFields(nodeInterceptor);
 
     Method beforeMethod = findBeforeMethod(nodeInterceptor.getClass());
@@ -124,22 +122,16 @@ public class InstrumentedTopologyBuilderVisitor extends AbstractVisitor {
     }
 
     if (beforeMethod != null) {
-      FunctionInvoker functionInvoker = FunctionInvoker.builder()
-          .defaultTargetInstance(nodeInterceptor)
-          .targetClass(nodeInterceptor.getClass())
-          .targetMethod(beforeMethod)
-          .build();
+      FunctionInvoker functionInvoker = new ReflectiveFunctionInvoker(nodeInterceptor, nodeInterceptor.getClass(),
+          beforeMethod, true);
       ProcessorNode beforeProcessorNode = new ProcessorNode("pre-" + node.getName(), functionInvoker, parent,
           interceptedParent);
       builder.addProcessorNode(beforeProcessorNode);
     }
 
     if (afterMethod != null) {
-      FunctionInvoker functionInvoker = FunctionInvoker.builder()
-          .defaultTargetInstance(nodeInterceptor)
-          .targetClass(nodeInterceptor.getClass())
-          .targetMethod(afterMethod)
-          .build();
+      FunctionInvoker functionInvoker = new ReflectiveFunctionInvoker(nodeInterceptor, nodeInterceptor.getClass(),
+          afterMethod, true);
       ProcessorNode afterProcessorNode = new ProcessorNode("post-" + node.getName(), functionInvoker,
           interceptedChildren, children);
       builder.addProcessorNode(afterProcessorNode);
@@ -162,7 +154,7 @@ public class InstrumentedTopologyBuilderVisitor extends AbstractVisitor {
     SubscriberNode<?> newSubscriberNode = new SubscriberNode(node.getName(), node.getSubscriber(), intercepted);
 
     NodeInterceptor nodeInterceptor = nodeInterceptorSupplier.get();
-    nodeInterceptor.setNodeName(node.getName());
+    nodeInterceptor.initialize(node.getName());
     injectFields(nodeInterceptor);
 
     Method method = findBeforeMethod(nodeInterceptor.getClass());
@@ -172,11 +164,8 @@ public class InstrumentedTopologyBuilderVisitor extends AbstractVisitor {
       return;
     }
 
-    FunctionInvoker functionInvoker = FunctionInvoker.builder()
-        .defaultTargetInstance(nodeInterceptor)
-        .targetClass(nodeInterceptor.getClass())
-        .targetMethod(method)
-        .build();
+    FunctionInvoker functionInvoker = new ReflectiveFunctionInvoker(nodeInterceptor, nodeInterceptor.getClass(),
+        method, true);
 
     ProcessorNode processorNode = new ProcessorNode("pre-" + node.getName(), functionInvoker, intercepted, parent);
 
