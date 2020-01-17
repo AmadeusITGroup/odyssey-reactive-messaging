@@ -13,7 +13,6 @@ public class FunctionInvokerInitializer extends AbstractVisitor {
       PublisherNode publisherNode = (PublisherNode) node;
       QuarkusPublisherInvoker quarkusPublisherInvoker = (QuarkusPublisherInvoker) publisherNode.getPublisherInvoker();
       quarkusPublisherInvoker.initialize();
-
     } else if (node instanceof ProcessorNode) {
       ProcessorNode processorNode = (ProcessorNode) node;
       QuarkusFunctionInvoker quarkusFunctionInvoker = (QuarkusFunctionInvoker) processorNode.getFunctionInvoker();

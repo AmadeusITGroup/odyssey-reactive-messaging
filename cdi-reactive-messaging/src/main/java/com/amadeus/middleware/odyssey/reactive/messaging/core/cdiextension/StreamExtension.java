@@ -40,17 +40,18 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageInitializer
 import com.amadeus.middleware.odyssey.reactive.messaging.core.MessageScoped;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvokerImpl;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReactiveMessagingContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReflectivePublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.CDIAsync;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.ProxyProducer;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.InitializerVisitor;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyBuilder;
 
 public class StreamExtension implements Extension {
   private static final Logger logger = LoggerFactory.getLogger(StreamExtension.class);
 
-  private MessageInitializerRegistryImpl messageInitializerRegistry = new MessageInitializerRegistryImpl();
+  private CDIMessageInitializerRegistry messageInitializerRegistry = new CDIMessageInitializerRegistry();
 
   private TopologyBuilder builder = new TopologyBuilder();
   private List<AnnotatedType<? extends Metadata>> metadata = new ArrayList<>();
@@ -178,7 +179,7 @@ public class StreamExtension implements Extension {
   }
 
   private void processFlowingPublisher(AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
-    PublisherInvokerImpl<?> publisherInvoker = new PublisherInvokerImpl<>(annotatedType.getJavaClass(),
+    ReflectivePublisherInvoker<?> publisherInvoker = new ReflectivePublisherInvoker<>(annotatedType.getJavaClass(),
         method.getJavaMember());
     Stream<String> os = method.getAnnotations(Outgoing.class)
         .stream()
@@ -217,8 +218,8 @@ public class StreamExtension implements Extension {
   }
 
   /**
-   * Register the CDI producers for an actual Metadata, Async&lt;Metadata&gt; and all of their used
-   * parameterized versions.
+   * Register the CDI producers for an actual Metadata, Async&lt;Metadata&gt; and all of their used parameterized
+   * versions.
    *
    * @param abd
    *          CDI event
@@ -275,7 +276,7 @@ public class StreamExtension implements Extension {
     logger.debug("AfterDeploymentValidation");
 
     ReactiveMessagingContext.setMessageInitializerRegistry(messageInitializerRegistry);
-    messageInitializerRegistry.initialize(beanManager);
+    messageInitializerRegistry.initialize();
 
     Instance<Object> instance = beanManager.createInstance();
 
@@ -283,11 +284,9 @@ public class StreamExtension implements Extension {
     Topology topology = instance.select(Topology.class)
         .get();
     builder.build(topology);
-    FunctionInvokerInitializer functionInvokerInitializer = new FunctionInvokerInitializer(beanManager);
-    topology.accept(functionInvokerInitializer);
+    topology.accept(new InitializerVisitor());
     builder = null;
 
     logger.info("StreamExtension initialized");
   }
-
 }

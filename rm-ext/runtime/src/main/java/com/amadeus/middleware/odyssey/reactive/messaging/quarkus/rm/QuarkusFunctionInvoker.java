@@ -60,27 +60,8 @@ public class QuarkusFunctionInvoker implements FunctionInvoker {
     return beanId;
   }
 
-  public Bean<?> getBean() {
-    return Arc.container()
-        .bean(beanId);
-  }
-
-  public String getMethodName() {
-    return methodName;
-  }
-
   public void setMethodName(String methodName) {
     this.methodName = methodName;
-  }
-
-  @Override
-  public Class<?> getTargetClass() {
-    return targetClass;
-  }
-
-  @Override
-  public Method getMethod() {
-    return null;
   }
 
   @Override
@@ -92,27 +73,20 @@ public class QuarkusFunctionInvoker implements FunctionInvoker {
     this.signature = signature;
   }
 
-  @Override
-  public void setTargetInstance(Object targetInstance) {
-    this.targetInstance = targetInstance;
-  }
-
-  @Override
-  public Object getTargetInstance() {
-    return targetInstance;
+  public void setParameterTypes(Type[] parameterTypes) {
+    this.parameterTypes = parameterTypes;
   }
 
   public Type[] getParameterTypes() {
     return parameterTypes;
   }
 
-  public void setParameterTypes(Type[] parameterTypes) {
-    this.parameterTypes = parameterTypes;
+  public void setAsyncParameterTypes(Type[] asyncParameterTypes) {
+    this.asyncParameterTypes = asyncParameterTypes;
   }
 
-  @Override
-  public Object invoke(Object targetInstance, Message<?> message) throws FunctionInvocationException {
-    return null;
+  public Type[] getAsyncParameterTypes() {
+    return asyncParameterTypes;
   }
 
   @Override
@@ -132,6 +106,11 @@ public class QuarkusFunctionInvoker implements FunctionInvoker {
         context.suspend();
       }
     }
+  }
+
+  @Override
+  public Object invoke(PublisherBuilder<Message<?>> publisher) throws FunctionInvocationException {
+    return invoker.invoke(publisher.buildRs());
   }
 
   private Object[] buildParameters(Message<?> message) {
@@ -171,13 +150,9 @@ public class QuarkusFunctionInvoker implements FunctionInvoker {
     return parameters.toArray();
   }
 
-  @Override
-  public Publisher<Message<?>> invoke(Object targetInstance, PublisherBuilder<Message<?>> publisherBuilder)
-      throws FunctionInvocationException {
-    return null;
-  }
 
   @SuppressWarnings("unchecked")
+  @Override
   public void initialize() {
     Bean bean = Arc.container()
         .bean(getBeanId());
@@ -200,13 +175,5 @@ public class QuarkusFunctionInvoker implements FunctionInvoker {
         return;
       }
     }
-  }
-
-  public Type[] getAsyncParameterTypes() {
-    return asyncParameterTypes;
-  }
-
-  public void setAsyncParameterTypes(Type[] asyncParameterTypes) {
-    this.asyncParameterTypes = asyncParameterTypes;
   }
 }

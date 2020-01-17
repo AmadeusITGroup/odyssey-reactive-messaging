@@ -2,38 +2,23 @@ package com.amadeus.middleware.odyssey.reactive.messaging.core.cdiextension;
 
 import java.lang.reflect.Method;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.spi.CDI;
 
-import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.BaseFunctionInvoker;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.FunctionInvocationException;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.MessageImpl;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.MessageScopedContext;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.ReflectiveFunctionInvoker;
 
-public class CDIFunctionInvoker extends BaseFunctionInvoker {
-  private static final Logger logger = LoggerFactory.getLogger(CDIFunctionInvoker.class);
+public class CDIFunctionInvoker extends ReflectiveFunctionInvoker {
 
   public CDIFunctionInvoker(Class<?> targetClass, Method targetMethod) {
-    super(targetClass, targetMethod);
+    super(targetClass, targetMethod, true);
   }
 
-  public CDIFunctionInvoker(Object defaultTargetInstance, Class<?> targetClass, Method targetMethod) {
-    super(defaultTargetInstance, targetClass, targetMethod);
-  }
-
-  public Object invoke(Object targetInstance, Message<?> message) throws FunctionInvocationException {
-    MessageImpl<?> messageImpl = (MessageImpl<?>) message;
-    MessageScopedContext context = MessageScopedContext.getInstance();
-    context.start(messageImpl.getScopeContextId());
-    try {
-      return super.invoke(targetInstance, message);
-    } catch (FunctionInvocationException e) {
-      throw e;
-    } catch (Exception e) {
-      throw new FunctionInvocationException(e);
-    } finally {
-      context.suspend();
-    }
+  @Override
+  public void initialize() {
+    Instance<Object> instance = CDI.current()
+        .getBeanManager()
+        .createInstance();
+    setTargetInstance(instance.select(getTargetClass())
+        .get());
   }
 }

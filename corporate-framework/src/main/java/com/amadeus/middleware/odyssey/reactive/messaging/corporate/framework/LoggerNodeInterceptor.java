@@ -19,8 +19,8 @@ public class LoggerNodeInterceptor implements NodeInterceptor {
   private Message<?> message;
 
   @Override
-  public void setNodeName(String name) {
-    this.nodeName = name;
+  public void initialize(String nodeName) {
+    this.nodeName = nodeName;
   }
 
   @Before

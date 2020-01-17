@@ -10,7 +10,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.reactivestreams.Publisher;
@@ -20,45 +19,30 @@ import org.slf4j.LoggerFactory;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
+import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.MessageScopedContext;
 
-public class BaseFunctionInvoker implements FunctionInvoker {
-  private static final Logger logger = LoggerFactory.getLogger(BaseFunctionInvoker.class);
+public class ReflectiveFunctionInvoker implements FunctionInvoker {
+  private static final Logger logger = LoggerFactory.getLogger(ReflectiveFunctionInvoker.class);
 
   private Class<?> targetClass;
   private Method targetMethod;
   private Object defaultTargetInstance;
-  private Signature signature;
+  private boolean contextActivation;
 
-  public BaseFunctionInvoker(Class<?> targetClass, Method targetMethod) {
+  public ReflectiveFunctionInvoker(Class<?> targetClass, Method targetMethod) {
+    this(targetClass, targetMethod, false);
+  }
+
+  public ReflectiveFunctionInvoker(Class<?> targetClass, Method targetMethod, boolean contextActivation) {
     this.targetClass = targetClass;
     this.targetMethod = targetMethod;
-    detectSignature();
+    this.contextActivation = contextActivation;
   }
 
-  public BaseFunctionInvoker(Object defaultTargetInstance, Class<?> targetClass, Method targetMethod) {
-    this(targetClass, targetMethod);
+  public ReflectiveFunctionInvoker(Object defaultTargetInstance, Class<?> targetClass, Method targetMethod,
+      boolean contextActivation) {
+    this(targetClass, targetMethod, contextActivation);
     this.defaultTargetInstance = defaultTargetInstance;
-  }
-
-  private void detectSignature() {
-    signature = UNKNOWN;
-
-    Class<?> returnType = targetMethod.getReturnType();
-    if (void.class.isAssignableFrom(returnType)) {
-      signature = DIRECT;
-      return;
-    }
-
-    if (isMessagePublisher(targetMethod.getGenericReturnType())) {
-      if (targetMethod.getParameterCount() != 1) {
-        return;
-      }
-      Parameter parameter = targetMethod.getParameters()[0];
-      if (isMessagePublisher(parameter.getParameterizedType())) {
-        signature = PUBLISHER_PUBLISHER;
-        return;
-      }
-    }
   }
 
   private static boolean isMessagePublisher(Type type) {
@@ -80,54 +64,74 @@ public class BaseFunctionInvoker implements FunctionInvoker {
     return Message.class.isAssignableFrom((Class<?>) ((ParameterizedType) paramType).getRawType());
   }
 
-  @Override
   public Class<?> getTargetClass() {
     return targetClass;
   }
 
-  @Override
   public Method getMethod() {
     return targetMethod;
   }
 
   @Override
   public Signature getSignature() {
-    return signature;
+    Class<?> returnType = targetMethod.getReturnType();
+    if (void.class.isAssignableFrom(returnType)) {
+      return DIRECT;
+    }
+    if (isMessagePublisher(targetMethod.getGenericReturnType())) {
+      if (targetMethod.getParameterCount() != 1) {
+        return UNKNOWN;
+      }
+      Parameter parameter = targetMethod.getParameters()[0];
+      if (isMessagePublisher(parameter.getParameterizedType())) {
+        return PUBLISHER_PUBLISHER;
+      }
+    }
+    return UNKNOWN;
   }
 
   @Override
+  public void initialize() {
+  }
+
+  // @Override
   public void setTargetInstance(Object targetInstance) {
     defaultTargetInstance = targetInstance;
   }
 
-  @Override
+  // @Override
   public Object getTargetInstance() {
     return defaultTargetInstance;
   }
 
   @Override
-  public Object invoke(Object targetInstance, Message<?> message) throws FunctionInvocationException {
+  public Object invoke(Message<?> message) throws FunctionInvocationException {
+    MessageScopedContext context = null;
+    boolean contextAlreadyActive = false;
+    if (contextActivation) {
+      MessageImpl<?> messageImpl = (MessageImpl<?>) message;
+      context = MessageScopedContext.getInstance();
+      contextAlreadyActive = context.isActive();
+      if (!contextAlreadyActive) {
+        context.start(messageImpl.getScopeContextId());
+      }
+    }
     Object[] parameters = buildParameters(message);
     try {
-      return targetMethod.invoke(targetInstance, parameters);
+      return targetMethod.invoke(defaultTargetInstance, parameters);
     } catch (Exception e) {
       throw new FunctionInvocationException(e);
+    } finally {
+      if ((contextActivation) && (!contextAlreadyActive)) {
+        context.suspend();
+      }
     }
   }
 
   @Override
-  public Object invoke(Message<?> message) throws FunctionInvocationException {
-    Objects.requireNonNull(defaultTargetInstance);
-    return invoke(defaultTargetInstance, message);
-  }
-
-
-    @SuppressWarnings("unchecked")
-  @Override
-  public Publisher<Message<?>> invoke(Object targetInstance, PublisherBuilder<Message<?>> publisherBuilder)
-      throws FunctionInvocationException {
+  public Object invoke(PublisherBuilder<Message<?>> publisher) throws FunctionInvocationException {
     try {
-      return (Publisher<Message<?>>) targetMethod.invoke(targetInstance, publisherBuilder.buildRs());
+      return targetMethod.invoke(defaultTargetInstance, publisher.buildRs());
     } catch (Exception e) {
       throw new FunctionInvocationException(e);
     }

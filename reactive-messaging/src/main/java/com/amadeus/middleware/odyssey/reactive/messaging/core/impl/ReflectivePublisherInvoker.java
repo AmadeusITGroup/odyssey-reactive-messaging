@@ -2,17 +2,20 @@ package com.amadeus.middleware.odyssey.reactive.messaging.core.impl;
 
 import java.lang.reflect.Method;
 
+import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.spi.CDI;
+
 import org.reactivestreams.Publisher;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 
-public class PublisherInvokerImpl<T> implements PublisherInvoker<T> {
+public class ReflectivePublisherInvoker<T> implements PublisherInvoker<T> {
 
   private Class<?> targetClass;
   private Method targetMethod;
   private Object targetInstance;
 
-  public PublisherInvokerImpl(Class<?> targetClass, Method targetMethod) {
+  public ReflectivePublisherInvoker(Class<?> targetClass, Method targetMethod) {
     this.targetClass = targetClass;
     this.targetMethod = targetMethod;
   }
@@ -32,5 +35,13 @@ public class PublisherInvokerImpl<T> implements PublisherInvoker<T> {
     } catch (Exception e) {
       throw new FunctionInvocationException(e);
     }
+  }
+
+  @Override
+  public void initialize() {
+    Instance<Object> instance = CDI.current()
+      .getBeanManager()
+      .createInstance();
+    setTargetInstance(instance.select(getTargetClass()).get());
   }
 }

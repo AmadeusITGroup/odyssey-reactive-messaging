@@ -6,5 +6,5 @@ package com.amadeus.middleware.odyssey.reactive.messaging.core;
  */
 public interface NodeInterceptor {
 
-  void setNodeName(String name);
+  void initialize(String nodeName);
 }
