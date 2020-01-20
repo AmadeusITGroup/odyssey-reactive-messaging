@@ -3,6 +3,20 @@
 
 # Explorations for the MicroProfile Reactive Messaging specification
 
+[Introduction](#introduction)
+
+[Prototyped API](#prototyped-api)
+
+[CDI implementation](#cdi-implementation)
+
+[Mixing with native reactive streams declaration](#mixing-with-native-reactive-streams-declaration)
+
+[Reactive Stream topology reshaping and instrumentation](#reactive-stream-topology-reshaping-and-instrumentation)
+
+[Project sub-modules](#project-sub-modules)
+
+## Introduction
+
 ### Reactive Messaging for MicroProfile exploration
 
 This project is about experimenting with new ideas for the [Reactive Messaging for MicroProfile](https://github.com/eclipse/microprofile-reactive-messaging) specifications.
@@ -38,6 +52,7 @@ challenge of threads (i.e. In CDI, a *NormalScope* is thread bound.).
 
 * [smallrye-reactive-messaging](https://github.com/smallrye/smallrye-reactive-messaging)
 
+[Prototyped API]:""
 ## Prototyped API
 
 This section introduces some basic elements.
@@ -882,7 +897,7 @@ A selection mechanism could be used to only instrument specific nodes according 
 `MessageInitializer` could be dropped in favor of this, with a selection mechanism that could selectively target Publishers of specific kind of messages
 (i.e. specific kind of input-connectors).
 
-## Projects
+## Project sub-modules
  
 ### Structure
 
