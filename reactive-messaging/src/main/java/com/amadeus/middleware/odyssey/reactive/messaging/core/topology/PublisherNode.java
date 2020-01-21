@@ -11,6 +11,11 @@ public class PublisherNode<T> extends AbstractNode {
   public PublisherNode() {
   }
 
+  public PublisherNode(PublisherNode<T> that) {
+    this(that.name, that.publisherInvoker, that.children.keySet()
+        .toArray(new String[] {}));
+  }
+
   public PublisherNode(String name, PublisherInvoker<T> publisherInvoker, String[] outputChannels) {
     super(name);
     this.publisherInvoker = publisherInvoker;
@@ -26,12 +31,5 @@ public class PublisherNode<T> extends AbstractNode {
 
   public PublisherInvoker<T> getPublisherInvoker() {
     return publisherInvoker;
-  }
-
-  @Override
-  protected Object clone() {
-    String[] outputChannels = children.keySet()
-        .toArray(new String[] {});
-    return new PublisherNode<>(name, publisherInvoker, outputChannels);
   }
 }

@@ -7,6 +7,9 @@ import java.util.Set;
 
 public class AnnotationUtils {
 
+  private AnnotationUtils() {
+  }
+
   /**
    * Limitation: This has not a clean semantic as it will check for inherited annotations through interfaces... However,
    * it enables to veto Beans in order to setup our Producer.

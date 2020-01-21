@@ -36,10 +36,10 @@ public class CDIReactiveStreams {
 
   @State(Scope.Thread)
   public static class MyState {
-    public PublisherBuilder<Integer> stream;
-    public Method method;
-    public SeContainer container;
-    public int counter = 0;
+    private PublisherBuilder<Integer> stream;
+    private Method method;
+    private SeContainer container;
+    private int counter = 0;
 
     public MyState() {
       try {

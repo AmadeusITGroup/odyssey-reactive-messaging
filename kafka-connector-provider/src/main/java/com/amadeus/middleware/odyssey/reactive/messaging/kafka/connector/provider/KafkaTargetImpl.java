@@ -65,12 +65,12 @@ public class KafkaTargetImpl implements KafkaTarget {
 
   @Override
   public String getMetadataKey() {
-    return KEY;
+    return META_KEY;
   }
 
   @Override
   public String getMetadataMergeKey() {
-    return MERGE_KEY;
+    return META_MERGE_KEY;
   }
 
   @Override

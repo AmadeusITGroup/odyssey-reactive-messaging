@@ -4,30 +4,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.reactivestreams.Subscriber;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.FunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.PublisherInvoker;
 
 public class TopologyBuilder {
-  private static final Logger logger = LoggerFactory.getLogger(TopologyBuilder.class);
 
   private List<ProcessorNode> processorNodes = new ArrayList<>();
 
-  private List<PublisherNode<?>> publisherNodes = new ArrayList<>();
+  private List<PublisherNode> publisherNodes = new ArrayList<>();
 
-  private List<SubscriberNode<?>> subscriberNodes = new ArrayList<>();
+  private List<SubscriberNode> subscriberNodes = new ArrayList<>();
 
   public List<ProcessorNode> getProcessorNodes() {
     return processorNodes;
   }
 
-  public List<PublisherNode<?>> getPublisherNodes() {
+  public List<PublisherNode> getPublisherNodes() {
     return publisherNodes;
   }
 
-  public List<SubscriberNode<?>> getSubscriberNodes() {
+  public List<SubscriberNode> getSubscriberNodes() {
     return subscriberNodes;
   }
 
@@ -43,8 +40,7 @@ public class TopologyBuilder {
   }
 
   @SuppressWarnings({ "unchecked", "rawtypes" })
-  public <T> PublisherNode addPublisherNode(String name, PublisherInvoker<?> publisherInvoker,
-      String... outputChannels) {
+  public PublisherNode addPublisherNode(String name, PublisherInvoker<?> publisherInvoker, String... outputChannels) {
     PublisherNode publisherNode = new PublisherNode(name, publisherInvoker, outputChannels);
     publisherNodes.add(publisherNode);
     return publisherNode;

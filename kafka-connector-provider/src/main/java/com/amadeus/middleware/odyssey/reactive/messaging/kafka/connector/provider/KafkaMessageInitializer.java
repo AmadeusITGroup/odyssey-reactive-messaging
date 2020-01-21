@@ -18,7 +18,7 @@ public class KafkaMessageInitializer {
   public void initialize() {
 
     // If the Metadata is already present, then do nothing.
-    if (message.hasMergeableMetadata(KafkaIncoming.MERGE_KEY)) {
+    if (message.hasMergeableMetadata(KafkaIncoming.META_MERGE_KEY)) {
       return;
     }
 

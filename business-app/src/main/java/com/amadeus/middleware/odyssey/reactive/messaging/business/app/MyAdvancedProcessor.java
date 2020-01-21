@@ -69,7 +69,7 @@ public class MyAdvancedProcessor {
     logger.info("EventMetadata after POJO update direct={},cdi={}", ec, gec);
 
     // Yet another way, without injection, to get the KafkaIncoming
-    KafkaIncoming kc2 = msg.<KafkaIncoming>getMetadata(KafkaIncoming.KEY);
+    KafkaIncoming kc2 = msg.<KafkaIncoming>getMetadata(KafkaIncoming.META_KEY);
     logger.debug("KafkaIncoming from message={}", kc2);
 
     // Let's start asynchronous processing with the message

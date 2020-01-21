@@ -29,14 +29,13 @@ public class InstrumentedTopologyBuilderVisitor extends AbstractVisitor {
 
   public static Topology build(String name, Supplier<NodeInterceptor> nodeInterceptorSupplier, BeanManager beanManager,
       Topology topology) {
-    for (PublisherNode node : topology.getPublisherNodes()) {
-      InstrumentedTopologyBuilderVisitor instrumentedTopologyBuilderVisitor = new InstrumentedTopologyBuilderVisitor(
-          name, nodeInterceptorSupplier, beanManager);
-      node.accept(instrumentedTopologyBuilderVisitor);
-      // TODO: For now, just peek the first line and return
-      return instrumentedTopologyBuilderVisitor.build();
-    }
-    return null;
+    // TODO: For now, just peek the first line and return
+    PublisherNode node = topology.getPublisherNodes()
+        .get(0);
+    InstrumentedTopologyBuilderVisitor instrumentedTopologyBuilderVisitor = new InstrumentedTopologyBuilderVisitor(name,
+        nodeInterceptorSupplier, beanManager);
+    node.accept(instrumentedTopologyBuilderVisitor);
+    return instrumentedTopologyBuilderVisitor.build();
   }
 
   public InstrumentedTopologyBuilderVisitor(String name, Supplier<NodeInterceptor> nodeInterceptorSupplier,
@@ -78,8 +77,8 @@ public class InstrumentedTopologyBuilderVisitor extends AbstractVisitor {
       return;
     }
 
-    FunctionInvoker functionInvoker = new ReflectiveFunctionInvoker(nodeInterceptor, nodeInterceptor.getClass(),
-        method, true);
+    FunctionInvoker functionInvoker = new ReflectiveFunctionInvoker(nodeInterceptor, nodeInterceptor.getClass(), method,
+        true);
 
     ProcessorNode processorNode = new ProcessorNode("post-" + node.getName(), functionInvoker, intercepted, children);
 
@@ -164,8 +163,8 @@ public class InstrumentedTopologyBuilderVisitor extends AbstractVisitor {
       return;
     }
 
-    FunctionInvoker functionInvoker = new ReflectiveFunctionInvoker(nodeInterceptor, nodeInterceptor.getClass(),
-        method, true);
+    FunctionInvoker functionInvoker = new ReflectiveFunctionInvoker(nodeInterceptor, nodeInterceptor.getClass(), method,
+        true);
 
     ProcessorNode processorNode = new ProcessorNode("pre-" + node.getName(), functionInvoker, intercepted, parent);
 

@@ -27,9 +27,9 @@ public class OnlyReactiveStreams {
 
   @State(Scope.Thread)
   public static class MyState {
-    public PublisherBuilder<Integer> stream;
-    public Method method;
-    public int counter = 0;
+    private PublisherBuilder<Integer> stream;
+    private Method method;
+    private int counter = 0;
 
     public MyState() {
       try {

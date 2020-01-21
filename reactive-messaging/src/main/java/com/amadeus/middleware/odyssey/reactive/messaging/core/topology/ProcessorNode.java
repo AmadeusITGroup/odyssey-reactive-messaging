@@ -11,6 +11,13 @@ public class ProcessorNode extends AbstractNode {
   public ProcessorNode() {
   }
 
+  public ProcessorNode(ProcessorNode that) {
+    this(that.name, that.functionInvoker, that.parents.keySet()
+        .toArray(new String[] {}),
+        that.children.keySet()
+            .toArray(new String[] {}));
+  }
+
   public ProcessorNode(String name, FunctionInvoker functionInvoker, String[] inputChannels, String[] outputChannels) {
     super(name);
     this.functionInvoker = functionInvoker;
@@ -30,14 +37,5 @@ public class ProcessorNode extends AbstractNode {
 
   public FunctionInvoker getFunctionInvoker() {
     return functionInvoker;
-  }
-
-  @Override
-  protected Object clone() {
-    String[] inputChannels = parents.keySet()
-        .toArray(new String[] {});
-    String[] outputChannels = children.keySet()
-        .toArray(new String[] {});
-    return new ProcessorNode(name, functionInvoker, inputChannels, outputChannels);
   }
 }

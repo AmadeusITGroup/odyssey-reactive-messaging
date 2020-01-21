@@ -106,14 +106,13 @@ public class ReflectiveFunctionInvoker implements FunctionInvoker {
 
   @Override
   public Object invoke(Message<?> message) throws FunctionInvocationException {
-    MessageScopedContext context = null;
-    boolean contextAlreadyActive = false;
+    MessageScopedContext activatedContext = null;
     if (contextActivation) {
       MessageImpl<?> messageImpl = (MessageImpl<?>) message;
-      context = MessageScopedContext.getInstance();
-      contextAlreadyActive = context.isActive();
-      if (!contextAlreadyActive) {
-        context.start(messageImpl.getScopeContextId());
+      MessageScopedContext context = MessageScopedContext.getInstance();
+      if (!context.isActive()) {
+        activatedContext = context;
+        activatedContext.start(messageImpl.getScopeContextId());
       }
     }
     Object[] parameters = buildParameters(message);
@@ -122,8 +121,8 @@ public class ReflectiveFunctionInvoker implements FunctionInvoker {
     } catch (Exception e) {
       throw new FunctionInvocationException(e);
     } finally {
-      if ((contextActivation) && (!contextAlreadyActive)) {
-        context.suspend();
+      if (activatedContext != null) {
+        activatedContext.suspend();
       }
     }
   }
@@ -153,8 +152,7 @@ public class ReflectiveFunctionInvoker implements FunctionInvoker {
       }
 
       // Message Scoped object
-      Class<?> clazz = (Class<?>) param.getType();
-      Object object = MessageImpl.get(message, clazz);
+      Object object = MessageImpl.get(message, param.getType());
       if (object != null) {
         parameters.add(object);
         continue;

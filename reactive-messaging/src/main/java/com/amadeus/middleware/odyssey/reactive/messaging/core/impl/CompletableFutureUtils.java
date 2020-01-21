@@ -4,6 +4,9 @@ import java.util.concurrent.CompletableFuture;
 
 public class CompletableFutureUtils {
 
+  private CompletableFutureUtils() {
+  }
+
   /**
    * Propagate the completion state from a CompletableFuture to Another one.
    */
