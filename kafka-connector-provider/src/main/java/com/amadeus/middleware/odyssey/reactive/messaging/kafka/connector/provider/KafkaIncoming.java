@@ -11,8 +11,8 @@ import io.vertx.reactivex.kafka.client.producer.KafkaHeader;
 
 @MessageScoped
 public interface KafkaIncoming extends Metadata {
-  String KEY = "MY_KAFKA_INCOMING";
-  String MERGE_KEY = KEY;
+  String META_KEY = "MY_KAFKA_INCOMING";
+  String META_MERGE_KEY = META_KEY;
 
   String topic();
 

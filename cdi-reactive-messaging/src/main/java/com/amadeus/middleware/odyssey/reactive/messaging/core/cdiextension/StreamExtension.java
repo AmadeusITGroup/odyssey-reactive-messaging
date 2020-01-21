@@ -83,7 +83,7 @@ public class StreamExtension implements Extension {
     } else if (Method.class.isAssignableFrom(member.getClass())) {
       registerAllMessageAndAsyncTypesInMethods(dc, (Method) member);
     } else if (Constructor.class.isAssignableFrom(member.getClass())) {
-      registerAllMessageAndAsyncTypesInConstructors(dc, (Constructor<?>) member);
+      registerAllMessageAndAsyncTypesInConstructors((Constructor<?>) member);
     }
   }
 
@@ -101,7 +101,7 @@ public class StreamExtension implements Extension {
     }
   }
 
-  private void registerAllMessageAndAsyncTypesInConstructors(Class<?> dc, Constructor<?> constructor) {
+  private void registerAllMessageAndAsyncTypesInConstructors(Constructor<?> constructor) {
     for (Parameter parameter : constructor.getParameters()) {
       registerMessageAndAsyncType(parameter.getType(), parameter.getParameterizedType());
     }
@@ -149,10 +149,8 @@ public class StreamExtension implements Extension {
     annotatedType.getMethods()
         .stream()
         .filter(m -> m.isAnnotationPresent(MessageInitializer.class))
-        .forEach(annotatedMethod -> {
-          messageInitializerRegistry.add(event.getAnnotatedBeanClass()
-              .getJavaClass(), annotatedMethod.getJavaMember());
-        });
+        .forEach(annotatedMethod -> messageInitializerRegistry.add(event.getAnnotatedBeanClass()
+            .getJavaClass(), annotatedMethod.getJavaMember()));
   }
 
   public void processFlowingMethod(AnnotatedType<?> annotatedType, AnnotatedMethod<?> method) {
@@ -167,12 +165,12 @@ public class StreamExtension implements Extension {
     CDIFunctionInvoker functionInvoker = new CDIFunctionInvoker(annotatedType.getJavaClass(), method.getJavaMember());
     Stream<?> is = method.getAnnotations(Incoming.class)
         .stream()
-        .map(annotation -> ((Incoming) annotation).value());
+        .map(annotation -> annotation.value());
     String[] inputChannels = is.collect(Collectors.toList())
         .toArray(new String[] {});
     Stream<?> os = method.getAnnotations(Outgoing.class)
         .stream()
-        .map(annotation -> ((Outgoing) annotation).value());
+        .map(Outgoing::value);
     String[] outputChannels = os.collect(Collectors.toList())
         .toArray(new String[] {});
     builder.addProcessor(getName(annotatedType, method), functionInvoker, inputChannels, outputChannels);
@@ -183,7 +181,7 @@ public class StreamExtension implements Extension {
         method.getJavaMember());
     Stream<String> os = method.getAnnotations(Outgoing.class)
         .stream()
-        .map(annotation -> ((Outgoing) annotation).value());
+        .map(Outgoing::value);
     String[] outputChannels = os.collect(Collectors.toList())
         .toArray(new String[] {});
     builder.addPublisherNode(getName(annotatedType, method), publisherInvoker, outputChannels);

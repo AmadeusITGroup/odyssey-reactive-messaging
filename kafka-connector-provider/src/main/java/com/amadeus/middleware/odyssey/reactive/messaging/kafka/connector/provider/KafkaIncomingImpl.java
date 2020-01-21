@@ -70,11 +70,11 @@ public class KafkaIncomingImpl implements KafkaIncoming {
 
   @Override
   public String getMetadataKey() {
-    return KEY;
+    return META_KEY;
   }
 
   @Override
   public String getMetadataMergeKey() {
-    return MERGE_KEY;
+    return META_MERGE_KEY;
   }
 }

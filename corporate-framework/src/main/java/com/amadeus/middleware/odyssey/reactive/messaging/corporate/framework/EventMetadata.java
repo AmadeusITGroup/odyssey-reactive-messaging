@@ -5,8 +5,8 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.Metadata;
 
 @MessageScoped
 public interface EventMetadata extends Metadata {
-  String KEY = "MY_EVENT_METADATA";
-  String MERGE_KEY = KEY;
+  String META_KEY = "MY_EVENT_METADATA";
+  String META_MERGE_KEY = META_KEY;
 
   String getUniqueMessageId();
 

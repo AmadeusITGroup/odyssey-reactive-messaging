@@ -7,8 +7,6 @@ import javax.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.reactivestreams.Publisher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Message;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.NodeName;
@@ -18,7 +16,6 @@ import io.reactivex.Flowable;
 
 @ApplicationScoped
 public class MyRxJavaProcessor {
-  private static final Logger logger = LoggerFactory.getLogger(MyRxJavaProcessor.class);
 
   @SuppressWarnings("unchecked")
   @Incoming("rxin")
@@ -33,7 +30,7 @@ public class MyRxJavaProcessor {
               .payload(message.getPayload())
               .build();
 
-          KafkaTarget target = child.getMetadata(KafkaTarget.KEY);
+          KafkaTarget target = child.getMetadata(KafkaTarget.META_KEY);
           target.topic(target.topic() + "-child");
 
           return Flowable.fromArray(message, child);

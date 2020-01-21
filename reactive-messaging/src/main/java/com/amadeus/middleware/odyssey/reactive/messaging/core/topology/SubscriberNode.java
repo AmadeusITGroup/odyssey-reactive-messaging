@@ -22,14 +22,12 @@ public class SubscriberNode<T> extends AbstractNode {
     }
   }
 
-  public Subscriber<Message<? super T>> getSubscriber() {
-    return subscriber;
+  public SubscriberNode(SubscriberNode<T> that) {
+    this(that.name, that.subscriber, that.parents.keySet()
+      .toArray(new String[] {}));
   }
 
-  @Override
-  protected Object clone() {
-    String[] inputChannels = parents.keySet()
-        .toArray(new String[] {});
-    return new SubscriberNode<>(name, subscriber, inputChannels);
+  public Subscriber<Message<? super T>> getSubscriber() {
+    return subscriber;
   }
 }

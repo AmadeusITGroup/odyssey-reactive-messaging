@@ -1,7 +1,6 @@
 package com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi;
 
 import com.amadeus.middleware.odyssey.reactive.messaging.core.Async;
-import com.amadeus.middleware.odyssey.reactive.messaging.core.impl.cdi.MessageScopedContext;
 
 public class CDIAsync<T> implements Async<T> {
 

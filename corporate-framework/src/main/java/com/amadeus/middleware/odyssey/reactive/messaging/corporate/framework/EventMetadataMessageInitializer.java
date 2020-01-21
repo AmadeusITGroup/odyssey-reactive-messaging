@@ -20,7 +20,7 @@ public class EventMetadataMessageInitializer {
   public void initialize(KafkaIncoming direcKafkaIncoming) {
 
     // If there is already a kind of EventContext, then do nothing.
-    if (message.hasMergeableMetadata(EventMetadata.MERGE_KEY)) {
+    if (message.hasMergeableMetadata(EventMetadata.META_MERGE_KEY)) {
       return;
     }
 

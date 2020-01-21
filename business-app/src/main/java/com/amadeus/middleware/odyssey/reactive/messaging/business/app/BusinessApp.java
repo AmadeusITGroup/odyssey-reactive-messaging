@@ -27,10 +27,10 @@ public class BusinessApp {
           .get();
 
       ReactiveStreamFactory reactiveStreamFactory = instance.select(ReactiveStreamFactory.class)
-        .get();
+          .get();
 
-      Topology instrumentedTopology = InstrumentedTopologyBuilderVisitor.build("logger",
-          () -> new LoggerNodeInterceptor(), container.getBeanManager(), topology);
+      Topology instrumentedTopology = InstrumentedTopologyBuilderVisitor.build("logger", LoggerNodeInterceptor::new,
+          container.getBeanManager(), topology);
 
       reactiveStreamFactory.build(instrumentedTopology);
 

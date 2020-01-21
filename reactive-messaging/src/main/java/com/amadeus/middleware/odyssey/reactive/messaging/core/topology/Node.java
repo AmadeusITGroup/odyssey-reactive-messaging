@@ -3,7 +3,7 @@ package com.amadeus.middleware.odyssey.reactive.messaging.core.topology;
 import java.util.Map;
 import java.util.Optional;
 
-public interface Node extends Cloneable {
+public interface Node {
   String getName();
 
   void setName(String name);

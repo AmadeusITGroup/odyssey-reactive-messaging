@@ -18,21 +18,23 @@ public class Topology {
   private List<ProcessorNode> processorNodes = new ArrayList<>();
   private List<SubscriberNode<?>> subscriberNodes = new ArrayList<>();
 
-  void addPublisherNodes(Iterable<PublisherNode<?>> publisherNodes) {
-    for (PublisherNode<?> publisherNode : publisherNodes) {
-      this.publisherNodes.add((PublisherNode<?>) publisherNode.clone());
+  @SuppressWarnings("unchecked")
+  void addPublisherNodes(Iterable<PublisherNode> publisherNodes) {
+    for (PublisherNode publisherNode : publisherNodes) {
+      this.publisherNodes.add(new PublisherNode(publisherNode));
     }
   }
 
   void addProcessorNodes(Iterable<ProcessorNode> processorNodes) {
     for (ProcessorNode processorNode : processorNodes) {
-      this.processorNodes.add((ProcessorNode) processorNode.clone());
+      this.processorNodes.add(new ProcessorNode(processorNode));
     }
   }
 
-  void addSubscriberNodes(Iterable<SubscriberNode<?>> subscriberNodes) {
-    for (SubscriberNode<?> subscriberNode : subscriberNodes) {
-      this.subscriberNodes.add((SubscriberNode<?>) subscriberNode.clone());
+  @SuppressWarnings("unchecked")
+  void addSubscriberNodes(Iterable<SubscriberNode> subscriberNodes) {
+    for (SubscriberNode subscriberNode : subscriberNodes) {
+      this.subscriberNodes.add(new SubscriberNode(subscriberNode));
     }
   }
 
@@ -66,15 +68,11 @@ public class Topology {
 
     for (ProcessorNode processorNode : processorNodes) {
       processorNode.getParents()
-          .forEach((channel, node) -> {
-            channelToBinding.computeIfAbsent(channel, c -> new ChannelBinding())
-                .addConsumer(processorNode);
-          });
+          .forEach((channel, node) -> channelToBinding.computeIfAbsent(channel, c -> new ChannelBinding())
+              .addConsumer(processorNode));
       processorNode.getChildren()
-          .forEach((channel, node) -> {
-            channelToBinding.computeIfAbsent(channel, c -> new ChannelBinding())
-                .addProducer(processorNode);
-          });
+          .forEach((channel, node) -> channelToBinding.computeIfAbsent(channel, c -> new ChannelBinding())
+              .addProducer(processorNode));
     }
 
     for (Map.Entry<String, ChannelBinding> entry : channelToBinding.entrySet()) {
@@ -97,7 +95,7 @@ public class Topology {
     }
   }
 
-  public List<PublisherNode<?>> getPublisherNodes() {
+  public List<PublisherNode> getPublisherNodes() {
     return new ArrayList<>(publisherNodes);
   }
 
@@ -105,7 +103,7 @@ public class Topology {
     return new ArrayList<>(processorNodes);
   }
 
-  public List<SubscriberNode<?>> getSubscriberNodes() {
+  public List<SubscriberNode> getSubscriberNodes() {
     return new ArrayList<>(subscriberNodes);
   }
 

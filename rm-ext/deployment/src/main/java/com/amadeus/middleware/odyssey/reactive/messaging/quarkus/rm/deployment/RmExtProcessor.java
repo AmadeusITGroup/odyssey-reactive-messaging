@@ -6,15 +6,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import javax.enterprise.context.spi.CreationalContext;
 
 import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
 import org.eclipse.collections.impl.multimap.set.UnifiedSetMultimap;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
@@ -30,12 +29,9 @@ import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Processor
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.PublisherNode;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.Topology;
 import com.amadeus.middleware.odyssey.reactive.messaging.core.topology.TopologyBuilder;
-import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.AsyncCreator;
-import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.AsyncCreatorImpl;
-import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MetadataCreator;
-import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MetadataCreatorImpl;
-import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MessageCreator;
+import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.AsyncBeanCreator;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MessageInitializerRecorder;
+import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.MessageScopedBeanCreator;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.QuarkusFunctionInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.QuarkusPublisherInvoker;
 import com.amadeus.middleware.odyssey.reactive.messaging.quarkus.rm.TopologyInitializerRecorder;
@@ -60,9 +56,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 
 public class RmExtProcessor {
   private static final Logger logger = Logger.getLogger(RmExtProcessor.class);
@@ -76,44 +69,21 @@ public class RmExtProcessor {
 
   @BuildStep
   NativeImageProxyDefinitionBuildItem registerProxies() {
-    return new NativeImageProxyDefinitionBuildItem("com.amadeus.middleware.odyssey.reactive.messaging.core.Message");
+    return new NativeImageProxyDefinitionBuildItem(Message.class.getName());
   }
 
   @BuildStep
-  void dontForgetMe(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+  void setUnremovableBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(Topology.class));
   }
 
   @BuildStep
   BeanRegistrarBuildItem syntheticBean(List<MetadataBuildItem> messageContextBuildItems) {
-    return new BeanRegistrarBuildItem(new BeanRegistrar() {
-      @Override
-      public void register(RegistrationContext registrationContext) {
-        registerMessageSyntheticTypes(registrationContext);
-        registerMetadataSyntheticTypes(registrationContext, messageContextBuildItems);
-        registerAsyncSyntheticTypes(registrationContext);
-      }
+    return new BeanRegistrarBuildItem(registrationContext -> {
+      registerMessageSyntheticTypes(registrationContext);
+      registerMetadataSyntheticTypes(registrationContext, messageContextBuildItems);
+      registerAsyncSyntheticTypes(registrationContext);
     });
-  }
-
-  void registerMetadataSyntheticTypes(BeanRegistrar.RegistrationContext registrationContext,
-      List<MetadataBuildItem> messageContextBuildItems) {
-    for (MetadataBuildItem messageContextBuildItem : messageContextBuildItems) {
-      Class<?> clazz = messageContextBuildItem.getClazz();
-      registrationContext.configure(clazz)
-          .types(clazz)
-          .creator(mc -> {
-            ResultHandle paramsHandle = mc.readInstanceField(FieldDescriptor.of(mc.getMethodDescriptor()
-                .getDeclaringClass(), "params", Map.class), mc.getThis());
-            ResultHandle creatorHandle = mc
-                .newInstance(MethodDescriptor.ofConstructor(MetadataCreatorImpl.class));
-            ResultHandle[] params = { mc.loadClass(clazz), mc.getMethodParam(0), paramsHandle };
-            ResultHandle ret = mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(MetadataCreator.class, "create",
-                Object.class, Class.class, CreationalContext.class, Map.class), creatorHandle, params);
-            mc.returnValue(ret);
-          })
-          .done();
-    }
   }
 
   void registerMessageSyntheticTypes(BeanRegistrar.RegistrationContext registrationContext) {
@@ -128,7 +98,8 @@ public class RmExtProcessor {
     Type[] mt = messageTypes.toArray(new Type[] {});
     registrationContext.configure(Message.class) // What is configure() ?
         .types(mt)
-        .creator(MessageCreator.class)
+        .param(MessageScopedBeanCreator.CLASS_KEY, Message.class)
+        .creator(MessageScopedBeanCreator.class)
         .done();
   }
 
@@ -159,72 +130,77 @@ public class RmExtProcessor {
       Type[] mt = baseToFullyParameterizedTypes.get(key)
           .toArray(new Type[] {});
 
-      Class clazz = RmExtProcessorHelpers.load(key.asParameterizedType()
+      String className = key.asParameterizedType()
           .arguments()
           .get(0)
-          .toString(),
-          Thread.currentThread()
-              .getContextClassLoader());
+          .toString();
 
-      String className = clazz.getName();
       registrationContext.configure(key.name())
           .types(mt)
-          .creator(mc -> {
-            ResultHandle creatorHandle = mc.newInstance(MethodDescriptor.ofConstructor(AsyncCreatorImpl.class));
-            ResultHandle[] params = { mc.load(className) };
-            ResultHandle ret = mc.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(AsyncCreator.class, "create", Object.class, String.class), creatorHandle,
-                params);
-            mc.returnValue(ret);
-          })
+          .param(AsyncBeanCreator.CLASS_NAME_KEY, className)
+          .creator(AsyncBeanCreator.class)
           .done();
     }
+  }
+
+  void registerMetadataSyntheticTypes(BeanRegistrar.RegistrationContext registrationContext,
+      List<MetadataBuildItem> messageContextBuildItems) {
+    messageContextBuildItems.stream()
+        .map(MetadataBuildItem::getClazz)
+        .forEach(clazz -> registrationContext.configure(clazz)
+            .types(clazz)
+            .param(MessageScopedBeanCreator.CLASS_KEY, clazz)
+            .creator(MessageScopedBeanCreator.class)
+            .done());
   }
 
   @BuildStep
   public void buildTopology(ValidationPhaseBuildItem validationPhase,
       BuildProducer<NodeBuildItem> nodeBuildItemBuildProducer) {
 
-    TopologyBuilder builder = new TopologyBuilder();
-    for (BeanInfo beanInfo : validationPhase.getContext()
+    validationPhase.getContext()
         .beans()
-        .classBeans()) {
-      for (MethodInfo methodInfo : beanInfo.getTarget()
-          .get()
-          .asClass()
-          .methods()) {
-        AnnotationStore annotationStore = validationPhase.getContext()
-            .get(BuildExtension.Key.ANNOTATION_STORE);
-        AnnotationInstance incoming = annotationStore.getAnnotation(methodInfo, DotNames.INCOMING);
-        AnnotationInstance outgoing = annotationStore.getAnnotation(methodInfo, DotNames.OUTGOING);
-        if ((incoming != null) || (outgoing != null)) {
-          logger.debugf("node %s.%s", beanInfo.toString(), methodInfo.toString());
-          nodeBuildItemBuildProducer.produce(new NodeBuildItem(beanInfo, methodInfo));
-        }
-      }
-    }
+        .classBeans()
+        .stream()
+        .forEach(beanInfo -> beanInfo.getTarget()
+            .ifPresent(annotationTarget -> {
+              for (MethodInfo methodInfo : annotationTarget.asClass()
+                  .methods()) {
+                AnnotationStore annotationStore = validationPhase.getContext()
+                    .get(BuildExtension.Key.ANNOTATION_STORE);
+                AnnotationInstance incoming = annotationStore.getAnnotation(methodInfo, DotNames.INCOMING);
+                AnnotationInstance outgoing = annotationStore.getAnnotation(methodInfo, DotNames.OUTGOING);
+                if ((incoming != null) || (outgoing != null)) {
+                  logger.debugf("node %s.%s", beanInfo.toString(), methodInfo.toString());
+                  nodeBuildItemBuildProducer.produce(new NodeBuildItem(beanInfo, methodInfo));
+                }
+              }
+            }));
+
   }
 
   @BuildStep
   public void lookupMessageInitializer(ValidationPhaseBuildItem validationPhase,
       BuildProducer<MessageInitializerBuildItem> messageInitializerBuildItemBuildProducer) {
-    for (BeanInfo beanInfo : validationPhase.getContext()
+    validationPhase.getContext()
         .beans()
-        .classBeans()) {
-      for (MethodInfo methodInfo : beanInfo.getTarget()
-          .get()
-          .asClass()
-          .methods()) {
-        AnnotationStore annotationStore = validationPhase.getContext()
-            .get(BuildExtension.Key.ANNOTATION_STORE);
-        AnnotationInstance messageInitializerAnnotation = annotationStore.getAnnotation(methodInfo,
-            DotNames.MESSAGE_INITIALIZER);
-        if (messageInitializerAnnotation != null) {
-          logger.debugf("messageinitializer %s.%s", beanInfo.toString(), methodInfo.toString());
-          messageInitializerBuildItemBuildProducer.produce(new MessageInitializerBuildItem(beanInfo, methodInfo));
-        }
-      }
-    }
+        .classBeans()
+        .stream()
+        .forEach(beanInfo -> beanInfo.getTarget()
+            .map(AnnotationTarget::asClass)
+            .map(ClassInfo::methods)
+            .ifPresent(methods -> {
+              AnnotationStore annotationStore = validationPhase.getContext()
+                  .get(BuildExtension.Key.ANNOTATION_STORE);
+              methods.stream()
+                  .forEach(methodInfo -> {
+                    if (annotationStore.hasAnnotation(methodInfo, DotNames.MESSAGE_INITIALIZER)) {
+                      logger.debugf("messageinitializer %s.%s", beanInfo.toString(), methodInfo.toString());
+                      messageInitializerBuildItemBuildProducer
+                          .produce(new MessageInitializerBuildItem(beanInfo, methodInfo));
+                    }
+                  });
+            }));
   }
 
   @BuildStep
@@ -281,10 +257,13 @@ public class RmExtProcessor {
             .asString());
       }
     }
-    logger.infof("in[%s] out[%s] processor: %s => %s", is, os, beanInfo.getTarget()
-        .get()
-        .asClass()
-        .name(), methodInfo.name());
+    if (logger.isDebugEnabled()) {
+      logger.debugf("in[%s] out[%s] processor: %s => %s", is, os, beanInfo.getTarget()
+          .map(AnnotationTarget::asClass)
+          .map(ClassInfo::name)
+          .map(DotName::toString)
+          .orElse("unknown"), methodInfo.name());
+    }
     return builder.addProcessor(getName(beanInfo, methodInfo), functionInvoker, is.toArray(new String[] {}),
         os.toArray(new String[] {}));
   }
@@ -301,10 +280,13 @@ public class RmExtProcessor {
             .asString());
       }
     }
-    logger.infof("out[%s] publisher: %s.%s", os, beanInfo.getTarget()
-        .get()
-        .asClass()
-        .name(), methodInfo.name());
+    if (logger.isDebugEnabled()) {
+      logger.infof("out[%s] publisher: %s.%s", os, beanInfo.getTarget()
+          .map(AnnotationTarget::asClass)
+          .map(ClassInfo::name)
+          .map(DotName::toString)
+          .orElse("unknown"), methodInfo.name());
+    }
     return builder.addPublisherNode(getName(beanInfo, methodInfo), publisherInvoker, os.toArray(new String[] {}));
   }
 
@@ -315,9 +297,9 @@ public class RmExtProcessor {
           .asString();
     }
     return bean.getTarget()
-        .get()
-        .asClass()
-        .name() + "." + method.name();
+        .map(target -> target.asClass()
+            .name() + "." + method.name())
+        .orElse(null);
   }
 
   @BuildStep(loadsApplicationClasses = true)
@@ -336,23 +318,18 @@ public class RmExtProcessor {
 
     ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
-    // Handle message initializer first
-    {
-      List<QuarkusFunctionInvoker> mii = new ArrayList<>();
-      for (MessageInitializerBuildItem mib : messageInitializerBuildItems) {
-        BeanInfo beanInfo = mib.getBean();
-        MethodInfo methodInfo = mib.getMethod();
-        QuarkusFunctionInvoker functionInvoker = new QuarkusFunctionInvoker();
-        functionInvoker.setBeanId(beanInfo.getIdentifier());
-        functionInvoker.setMethodName(methodInfo.name());
-        functionInvoker.setSignature(FunctionInvoker.Signature.DIRECT);
-        setupFunctionInvoker(recorderContext, reflectiveClass, classOutput, beanInfo, methodInfo, functionInvoker);
-        mii.add(functionInvoker);
-      }
-      messageInitializerRecorder.initialize(mii);
-    }
+    initializerMessageInitializers(messageInitializerRecorder, recorderContext, reflectiveClass,
+        messageInitializerBuildItems, classOutput);
 
-    // Handle the topology
+    initializeTopology(topologyInitializerRecorder, recorderContext, reflectiveClass, nodeBuildItems, beanContainer,
+        classOutput);
+
+    logger.info("} build build static init");
+  }
+
+  private void initializeTopology(TopologyInitializerRecorder topologyInitializerRecorder,
+      RecorderContext recorderContext, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+      List<NodeBuildItem> nodeBuildItems, BeanContainerBuildItem beanContainer, ClassOutput classOutput) {
     TopologyBuilder builder = new TopologyBuilder();
     for (NodeBuildItem nodeBuildItem : nodeBuildItems) {
       BeanInfo bean = nodeBuildItem.getBean();
@@ -365,16 +342,30 @@ public class RmExtProcessor {
       }
     }
     topologyInitializerRecorder.initialize(beanContainer.getValue(), builder);
-    logger.info("} build build static init");
+  }
+
+  private void initializerMessageInitializers(MessageInitializerRecorder messageInitializerRecorder,
+      RecorderContext recorderContext, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+      List<MessageInitializerBuildItem> messageInitializerBuildItems, ClassOutput classOutput) {
+    List<QuarkusFunctionInvoker> mii = new ArrayList<>();
+    for (MessageInitializerBuildItem mib : messageInitializerBuildItems) {
+      BeanInfo beanInfo = mib.getBean();
+      MethodInfo methodInfo = mib.getMethod();
+      QuarkusFunctionInvoker functionInvoker = new QuarkusFunctionInvoker();
+      functionInvoker.setBeanId(beanInfo.getIdentifier());
+      functionInvoker.setMethodName(methodInfo.name());
+      functionInvoker.setSignature(FunctionInvoker.Signature.DIRECT);
+      setupFunctionInvoker(recorderContext, reflectiveClass, classOutput, beanInfo, methodInfo, functionInvoker);
+      mii.add(functionInvoker);
+    }
+    messageInitializerRecorder.initialize(mii);
+
   }
 
   @SuppressWarnings("unchecked")
   private void processProcessorNode(RecorderContext recorderContext,
       BuildProducer<ReflectiveClassBuildItem> reflectiveClass, ClassOutput classOutput, BeanInfo bean,
       MethodInfo methodInfo, ProcessorNode processorNode) {
-
-    ClassLoader cl = Thread.currentThread()
-        .getContextClassLoader();
 
     QuarkusFunctionInvoker functionInvoker = (QuarkusFunctionInvoker) processorNode.getFunctionInvoker();
     setupFunctionInvoker(recorderContext, reflectiveClass, classOutput, bean, methodInfo, functionInvoker);
@@ -388,10 +379,11 @@ public class RmExtProcessor {
     reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
 
     String className = bean.getTarget()
-        .get()
-        .asClass()
-        .name()
-        .toString();
+        .map(AnnotationTarget::asClass)
+        .map(ClassInfo::name)
+        .map(DotName::toString)
+        .orElse(null);
+
     reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, className));
 
     java.lang.reflect.Type[] parameterTypes = new java.lang.reflect.Type[methodInfo.parameters()
@@ -421,13 +413,10 @@ public class RmExtProcessor {
       BuildProducer<ReflectiveClassBuildItem> reflectiveClass, ClassOutput classOutput, BeanInfo bean,
       MethodInfo methodInfo, PublisherNode publisherNode) {
 
-    ClassLoader cl = Thread.currentThread()
-        .getContextClassLoader();
-
     QuarkusPublisherInvoker publisherInvoker = (QuarkusPublisherInvoker) publisherNode.getPublisherInvoker();
     String generatedInvokerName = RmExtProcessorHelpers.generateInvoker(bean, methodInfo, classOutput);
     reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
 
-    publisherInvoker.setInvokerClass((Class<? extends Invoker>) recorderContext.classProxy(generatedInvokerName));
+    publisherInvoker.setInvokerClass(recorderContext.classProxy(generatedInvokerName));
   }
 }
