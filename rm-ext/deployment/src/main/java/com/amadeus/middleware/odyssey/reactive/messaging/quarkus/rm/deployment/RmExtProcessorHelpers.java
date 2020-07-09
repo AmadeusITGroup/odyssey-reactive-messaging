@@ -121,6 +121,11 @@ public class RmExtProcessorHelpers {
         return char.class;
       case "void":
         return void.class;
+      //missing default case
+      default:
+         // add default case
+        break;
+
     }
     try {
       return Class.forName(className, false, cl);
