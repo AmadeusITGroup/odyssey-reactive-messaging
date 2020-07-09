@@ -64,6 +64,11 @@ class ReactiveStreamBuilderVisitor extends AbstractVisitor {
       case PUBLISHER_PUBLISHER:
         buildPublisherPublisher(functionInvoker);
         break;
+      //missing default case
+      default:
+           // add default case
+        break;
+  
     }
 
     // if there is no child, make the subscription
