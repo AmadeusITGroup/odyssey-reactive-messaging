@@ -7,7 +7,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
-            <version>1.1.0.Final</version>
+            <version>2.16.8.Final</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
